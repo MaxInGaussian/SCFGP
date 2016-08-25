@@ -1,7 +1,9 @@
 #OffGPR
 
-OffGPR is a proposed variant of Gaussian process regression (GPR) that based on
-optimization of Fourier features. The lightlight inside this model is the use of 
+    OffGPR is a proposed variant of Gaussian process regression (GPR) that based on
+    optimization of Fourier features. 
+    
+The lightlight of this model is the use of 
 low-rank frequency matrix for sparse approximation of Fourier features. It is 
 intended to show that low-rank frequency matrix is able to lower the computational 
 burden in each step of optimization, and also render faster convergence and a stabler result.
