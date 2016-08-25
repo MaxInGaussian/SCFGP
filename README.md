@@ -1,33 +1,25 @@
 #OffGPR
 
-    OffGPR is a proposed variant of Gaussian process regression (GPR) that based on
-    optimization of Fourier features. 
-    
-The lightlight of this model is the use of 
-low-rank frequency matrix for sparse approximation of Fourier features. It is 
-intended to show that low-rank frequency matrix is able to lower the computational 
-burden in each step of optimization, and also render faster convergence and a stabler result.
+    OffGPR is a proposed variant of Gaussian process regression ([Rasmussen & Williams]
+(http://www.gaussianprocess.org/gpml/)) that based on optimizing Fourier features. 
 
-###Key Features of OffGPR
+This library, OffGPR is implemented in python using Theano. It was originally
+designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
 
-- It optimizes
+###Highlights of OffGPR
+
+- OffGPR optimizes
 the Fourier features so as to "learn" a tailmade covariance matrix from the data. 
 This removes the necessity of deciding which kernel function to use in different problems.
 
-- It gives the 
+- OffGPR provides a variety of ways to define the Fourier features
 
-- It relax the 
-and also speeds up the original regression ([Rasmussen & Williams]
-(http://www.gaussianprocess.org/gpml/)).
+- OffGPR uses low-rank frequency matrix for sparse approximation of Fourier features. It is 
+intended to show that low-rank frequency matrix is able to lower the computational 
+burden in each step of optimization, and also render faster convergence and a stabler result.
 
-This library, OffGPR was implemented in python using Theano. It was originally
-created and is now managed by Max W. Y. Lam. Experiments show that it often
-gives the most accurate prediction on benchmark datasets of regression over 
-state-of-the-art regressors.
-
-Current Version: 0.0.1
-
-Author: Max W. Y. Lam (maxingaussian@gmail.com)
+- Compared with different 
+state-of-the-art regressors, OffGPR usually gives the most accurate prediction on the benchmark datasets of regression.
 
 #Dependencies
 
