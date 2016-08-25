@@ -64,17 +64,17 @@ for M in Ms:
             sum_mnlp[i] += model.TsMNLP
             sum_time[i] += model.TrTime
             print("\n>>>", model.NAME)
-            print("    Mean Square Error\t\t\t\t= %.4f%s(Avg. %.4f)"%(
-                model.TsMSE, (3-int(np.log10(abs(model.TsMSE))))*"\t",
+            print("    Mean Square Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
+                model.TsMSE, (2-int(np.log10(abs(model.TsMSE))))*"\t",
                 sum_mse[i]/(round+1)))
-            print("    Normalized Mean Square Error\t\t= %.4f%s(Avg. %.4f)"%(
-                model.TsNMSE, (3-int(np.log10(abs(model.TsNMSE))))*"\t",
+            print("    Normalized Mean Square Error\t= %.3f%s(Avg. %.4f)"%(
+                model.TsNMSE, (2-int(np.log10(abs(model.TsNMSE))))*"\t",
                 sum_nmse[i]/(round+1)))
-            print("    Mean Negative Log Probability\t= %.4f%s(Avg. %.4f)"%(
-                model.TsMNLP, (3-int(np.log10(abs(model.TsMNLP))))*"\t",
+            print("    Mean Negative Log Probability\t= %.3f%s(Avg. %.4f)"%(
+                model.TsMNLP, (2-int(np.log10(abs(model.TsMNLP))))*"\t",
                 sum_mnlp[i]/(round+1)))
-            print("    Training Time\t\t\t\t\t= %.4f%s(Avg. %.4f)"%(
-                model.TrTime, (3-int(np.log10(abs(model.TrTime))))*"\t",
+            print("    Training Time\t\t\t\t\t= %.3f%s(Avg. %.4f)"%(
+                model.TrTime, (2-int(np.log10(abs(model.TrTime))))*"\t",
                 sum_time[i]/(round+1)))
             plt.close()
         MSE[i].append(sum_mse[i]/trials_per_model)
