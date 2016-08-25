@@ -29,8 +29,8 @@ def load_low_vs_full_data(proportion=0.1):
 X_train, Y_train, X_test, Y_test = load_low_vs_full_data()
 rank = 3
 trials_per_model = 3
-Ms = [10, 20, 30, 40, 50, 60, 70]
-fourier_feature_types = ["f", "flr"]
+Ms = [30, 40, 50, 60, 70]
+fourier_feature_types = ["zflr", "zf"]
 MSE = [[] for _ in range(len(fourier_feature_types))]
 NMSE = [[] for _ in range(len(fourier_feature_types))]
 MNLP = [[] for _ in range(len(fourier_feature_types))]
@@ -65,17 +65,13 @@ for M in Ms:
             sum_time[i] += model.TrTime
             print("\n>>>", model.NAME)
             print("    Mean Square Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TsMSE, (2-int(np.log10(abs(model.TsMSE))))*"\t",
-                sum_mse[i]/(round+1)))
+                model.TsMSE, "  ", sum_mse[i]/(round+1)))
             print("    Normalized Mean Square Error\t= %.3f%s(Avg. %.4f)"%(
-                model.TsNMSE, (2-int(np.log10(abs(model.TsNMSE))))*"\t",
-                sum_nmse[i]/(round+1)))
+                model.TsNMSE, "  ", sum_nmse[i]/(round+1)))
             print("    Mean Negative Log Probability\t= %.3f%s(Avg. %.4f)"%(
-                model.TsMNLP, (2-int(np.log10(abs(model.TsMNLP))))*"\t",
-                sum_mnlp[i]/(round+1)))
+                model.TsMNLP, "  ", sum_mnlp[i]/(round+1)))
             print("    Training Time\t\t\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TrTime, (2-int(np.log10(abs(model.TrTime))))*"\t",
-                sum_time[i]/(round+1)))
+                model.TrTime, "  ", sum_time[i]/(round+1)))
             plt.close()
         MSE[i].append(sum_mse[i]/trials_per_model)
         NMSE[i].append(sum_nmse[i]/trials_per_model)

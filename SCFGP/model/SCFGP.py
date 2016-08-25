@@ -28,6 +28,7 @@ class SCFGP(object):
     use_inducing_inputs = True
     use_optimized_phases = True
     add_low_rank_freq = True
+    precompute_c_method = None
     R, M, N, D, P = -1, -1, -1, -1, -1
     X, y, Xs, ys, hyper, invL, AiPhiTY, train_func, pred_func = [None]*9
     TrCost, TrMSE, TrNMSE, TsMSE, TsNMSE, TsMNLP = [np.inf]*6
@@ -38,12 +39,24 @@ class SCFGP(object):
                  use_inducing_inputs=True,
                  use_optimized_phases=True,
                  add_low_rank_freq=True,
+                 precompute_c_method=None,
                  msg=True):
         self.R = rank
         self.M = feature_size
         self.use_inducing_inputs = use_inducing_inputs
         self.use_optimized_phases = use_optimized_phases
         self.add_low_rank_freq = add_low_rank_freq
+        if(rank != "full"):
+            self.precompute_c_method = precompute_c_method
+            if(precompute_c_method == "rpca"):
+                from sklearn.decomposition import RandomizedPCA
+                self.pre = RandomizedPCA(n_components=self.R, n_iter=200)
+            elif(precompute_c_method == "rbm"):
+                from sklearn.neural_network import BernoulliRBM
+                self.pre = BernoulliRBM(n_components=self.R, n_iter=200)
+            elif(precompute_c_method == "spc"):
+                from sklearn.decomposition import DictionaryLearning
+                self.pre = DictionaryLearning(n_components=self.R, n_iter=200)
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.msg = msg
@@ -150,6 +163,8 @@ class SCFGP(object):
 
     def init_model(self):
         a, b = 0, -2*np.log(4.)
+        if(self.precompute_c_method is not None):
+            c = self.pre_c.copy()
         best_hyper, min_cost = None, np.inf
         for _ in range(50):
             hyper_list = [[a, b]]
@@ -157,7 +172,8 @@ class SCFGP(object):
                 Omega = np.random.randn(self.D, self.M)
                 hyper_list.append(Omega.ravel())
             else:
-                c = np.random.rand(self.D, self.R)
+                if(self.precompute_c_method is None):
+                    c = np.random.rand(self.D, self.R)
                 d = np.random.randn(self.M, self.R)
                 hyper_list.extend([c.ravel(), d.ravel()])
             cost = 0
@@ -190,6 +206,9 @@ class SCFGP(object):
         self.y = self.y_nml.forward_transform(y)
         self.N, self.D = self.X.shape
         _, self.P = self.y.shape
+        if(self.precompute_c_method is not None):
+            self.pre.fit(self.X)
+            self.pre_c = self.pre.components_.T
         if(self.train_func is not None or funcs is not None):
             self.train_func, self.pred_func = funcs
         else:
@@ -200,7 +219,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", 10000000, 10, 1e-4, [1e-2])
+            opt = Optimizer("smorms3", 500, 8, 1e-4, [0.5*self.M/self.N])
         if(plot_training):
             iter_list = []
             cost_list = []
