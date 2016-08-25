@@ -18,12 +18,12 @@ install_requires = [x.strip() for x in all_reqs if 'git+' not in x]
 dependency_links = [x.strip().replace('git+', '') for x in all_reqs if 'git+' not in x]
 
 setup(
-    name='OffGPR',
+    name='SCFGP',
     version=__version__,
-    description='Machine Learning Model: Optimized Fourier Features Based Gaussian Process Regression',
+    description='Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process',
     long_description=long_description,
-    url='https://github.com/MaxInGaussian/OffGPR',
-    download_url='https://github.com/MaxInGaussian/OffGPR/tarball/' + __version__,
+    url='https://github.com/MaxInGaussian/SCFGP',
+    download_url='https://github.com/MaxInGaussian/SCFGP/tarball/' + __version__,
     license='BSD',
     classifiers=[
       'Development Status :: 3 - Alpha',

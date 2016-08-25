@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# OffGPR documentation build configuration file, created by
+# SCFGP documentation build configuration file, created by
 # cookiecutter pipproject
 #
 # This file is execfile()d with the current directory set to its
@@ -48,7 +48,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'OffGPR'
+project = 'SCFGP'
 copyright = '2016, Max W. Y. Lam'
 author = 'Max W. Y. Lam'
 
@@ -123,7 +123,7 @@ html_theme = 'sphinx_rtd_theme'
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = 'OffGPR v0.0.1'
+#html_title = 'SCFGP v0.0.1'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -205,7 +205,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'OffGPRdoc'
+htmlhelp_basename = 'SCFGPdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -227,7 +227,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'OffGPR.tex', 'OffGPR Documentation',
+    (master_doc, 'SCFGP.tex', 'SCFGP Documentation',
      'Max W. Y. Lam', 'manual'),
 ]
 
@@ -257,7 +257,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'OffGPR', 'OffGPR Documentation',
+    (master_doc, 'SCFGP', 'SCFGP Documentation',
      [author], 1)
 ]
 
@@ -271,8 +271,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'OffGPR', 'OffGPR Documentation',
-     author, 'OffGPR', 'One line description of project.',
+    (master_doc, 'SCFGP', 'SCFGP Documentation',
+     author, 'SCFGP', 'One line description of project.',
      'Miscellaneous'),
 ]
 

@@ -1,5 +1,5 @@
 ################################################################################
-#  Optimized Fourier Features Based Gaussian Process Regression
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
@@ -14,15 +14,15 @@ import theano;
 import theano.tensor as T;
 import theano.sandbox.linalg as sT
 
-from OffGPR.util import Optimizer, Normalizer
+from SCFGP.util import Optimizer, Normalizer
 
 theano.config.mode = 'FAST_RUN'
 theano.config.optimizer = 'fast_run'
 theano.config.reoptimize_unpickled_function = False
 
-class OffGPR(object):
+class SCFGP(object):
     
-    " Optimized Fourier Features Based Gaussian Process Regression "
+    " Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process "
 
     ID, NAME, seed, opt, msg = "", "", None, None, True
     use_inducing_inputs = True
@@ -58,7 +58,7 @@ class OffGPR(object):
         self.ID = ''.join(
             chr(np.random.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
-        self.NAME = "OffGPR {Rank=%s|Feature Size=%d"%(str(self.R),
+        self.NAME = "SCFGP {Rank=%s|Feature Size=%d"%(str(self.R),
             self.M)+("|II" if self.use_inducing_inputs else "")+\
             ("|OP" if self.use_optimized_phases else "")+\
             ("|LRFF" if self.add_low_rank_freq else "")+"}"
@@ -66,7 +66,7 @@ class OffGPR(object):
         npr.seed(self.seed)
     
     def build_theano_model(self):
-        self.message("Compiling OffGPR theano model...")
+        self.message("Compiling SCFGP theano model...")
         X, Y, Xs, invL, AiPhiTY = T.dmatrices('X', 'Y', 'Xs', 'invL', 'AiPhiTY')
         N, P, S = X.shape[0], Y.shape[1], Xs.shape[0]
         hyper = T.dvector('hyper')

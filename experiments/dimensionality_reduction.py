@@ -1,5 +1,5 @@
 ################################################################################
-#  Optimized Fourier Features Based Gaussian Process Regression
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
@@ -7,12 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import label_binarize
 try:
-    from OffGPR import OffGPR, Optimizer
+    from SCFGP import SCFGP, Optimizer
 except:
-    print("OffGPR is not installed yet! Trying to call directly from source...")
+    print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
     path.append("../")
-    from OffGPR import OffGPR, Optimizer
+    from SCFGP import SCFGP, Optimizer
     print("done.")
 
     
@@ -37,8 +37,8 @@ for M in Ms:
     fig = plt.figure(1, figsize=(8, 6), facecolor='white', dpi=120)
     ax = fig.add_subplot(111)
     plot = (fig, ax)
-    model = OffGPR(rank=2, feature_size=10)
+    model = SCFGP(rank=2, feature_size=10)
     model.fit(X_train, _y_train, X_test, _y_test, opt=opt)
-    plt.title('Mapping 784 to 2 dimension By OffGPR (M=%d)'%(M), fontsize=20)
+    plt.title('Mapping 784 to 2 dimension By SCFGP (M=%d)'%(M), fontsize=20)
     plt.savefig('dimensionality_reduction_%d.png'%(M))
     plt.show()

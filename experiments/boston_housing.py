@@ -1,5 +1,5 @@
 ################################################################################
-#  Optimized Fourier Features Based Gaussian Process Regression
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
@@ -7,12 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 try:
-    from OffGPR import OffGPR
+    from SCFGP import SCFGP
 except:
-    print("OffGPR is not installed yet! Trying to call directly from source...")
+    print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
     path.append("../")
-    from OffGPR import OffGPR
+    from SCFGP import SCFGP
     print("done.")
 
 def load_low_vs_full_data(proportion=0.1):
@@ -53,7 +53,7 @@ for M in Ms:
             rank = "full"
         funcs = None
         for round in range(trials_per_model):
-            model = OffGPR(rank, M, tf1, tf2, tf3, msg=False)
+            model = SCFGP(rank, M, tf1, tf2, tf3, msg=False)
             if(funcs is None):
                 model.fit(X_train, Y_train, X_test, Y_test)
                 funcs = (model.train_func, model.pred_func)

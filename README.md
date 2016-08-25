@@ -1,40 +1,40 @@
-#OffGPR
+#SCFGP
 
-OffGPR is a proposed variant of [Gaussian process regression](http://www.gaussianprocess.org/gpml/) that bases on optimizing Fourier features. 
+SCFGP is a proposed variant of [Gaussian process regression](http://www.gaussianprocess.org/gpml/) that bases on sparsely correlated Fourier features. 
 It is implemented in python using Theano. It was originally
 designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
 
-###Highlights of OffGPR
+###Highlights of SCFGP
 
-- OffGPR optimizes
+- SCFGP optimizes
 the Fourier features so as to "learn" a tailmade covariance matrix from the data. 
 This removes the necessity of deciding which kernel function to use in different problems.
 
-- OffGPR implements a variety of formulation to transform the optimized Fourier features to covariance matrix, including the typical sin-cos concatenation introduced by [Miguel](http://www.jmlr.org/papers/v11/lazaro-gredilla10a.html), and the generalized approach described by [Yarin](http://jmlr.org/proceedings/papers/v37/galb15.html).
+- SCFGP implements a variety of formulation to transform the optimized Fourier features to covariance matrix, including the typical sin-cos concatenation introduced by [Miguel](http://www.jmlr.org/papers/v11/lazaro-gredilla10a.html), and the generalized approach described by [Yarin](http://jmlr.org/proceedings/papers/v37/galb15.html).
 
-- OffGPR uses low-rank frequency matrix for sparse approximation of Fourier features. It is 
+- SCFGP uses low-rank frequency matrix for sparse approximation of Fourier features. It is 
 intended to show that low-rank frequency matrix is able to lower the computational 
 burden in each step of optimization, and also render faster convergence and a stabler result.
 
 - Compared with other 
-state-of-the-art regressors, OffGPR usually gives the most accurate prediction on the benchmark datasets of regression.
+state-of-the-art regressors, SCFGP usually gives the most accurate prediction on the benchmark datasets of regression.
 
 # Installation
    
-### OffGPR
+### SCFGP
 
-To install OffGPR, use pip:
+To install SCFGP, use pip:
 
-    $ pip install OffGPR
+    $ pip install SCFGP
 
 Or clone this repo:
 
-    $ git clone https://github.com/MaxInGaussian/OffGPR.git
+    $ git clone https://github.com/MaxInGaussian/SCFGP.git
     $ python setup.py install
 
 ## Dependencies
 ### Theano
-    Theano is used due to its nice and simple coding style to represent tedious formulas of OffGPR, and
+    Theano is used due to its nice and simple coding style to represent tedious formulas of SCFGP, and
     the capability of computing automatic differentiation efficiently.
     
 To install Theano, see this page:

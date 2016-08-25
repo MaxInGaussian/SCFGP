@@ -1,5 +1,5 @@
 ################################################################################
-#  Optimized Fourier Features Based Gaussian Process Regression
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ######################################################################################
 

@@ -1,6 +1,7 @@
 ################################################################################
-#  Optimized Fourier Features Based Gaussian Process Regression
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
-from .OffGPR import OffGPR as OffGPR
+from .Optimizers import Optimizer as Optimizer
+from .Normalizers import Normalizer as Normalizer

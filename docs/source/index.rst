@@ -1,4 +1,4 @@
-Welcome to OffGPR's documentation!
+Welcome to SCFGP's documentation!
 =========================================
 
 Contents:
