@@ -15,7 +15,7 @@ except:
     from OffGPR import OffGPR
     print("done.")
 
-def load_boston_data(proportion=0.1):
+def load_low_vs_full_data(proportion=0.1):
     from sklearn import datasets
     from sklearn import cross_validation
     boston = datasets.load_boston()
@@ -26,11 +26,11 @@ def load_boston_data(proportion=0.1):
         cross_validation.train_test_split(X, y, test_size=proportion)
     return X_train, y_train, X_test, y_test
 
-X_train, Y_train, X_test, Y_test = load_boston_data()
+X_train, Y_train, X_test, Y_test = load_low_vs_full_data()
 rank = 3
 trials_per_model = 3
-Ms = [30, 40, 50, 60, 70]
-fourier_feature_types = ["f", "flr", "ph", "phlr", "zf", "zflr", "zph", "zphlr"]
+Ms = [10, 20, 30, 40, 50, 60, 70]
+fourier_feature_types = ["f", "flr"]
 MSE = [[] for _ in range(len(fourier_feature_types))]
 NMSE = [[] for _ in range(len(fourier_feature_types))]
 MNLP = [[] for _ in range(len(fourier_feature_types))]
@@ -48,7 +48,7 @@ for M in Ms:
             tf2 = True
         if("lr" in fftype):
             tf3 = True
-            rank = 3
+            rank = 4
         else:
             rank = "full"
         funcs = None
@@ -63,18 +63,18 @@ for M in Ms:
             sum_nmse[i] += model.TsNMSE
             sum_mnlp[i] += model.TsMNLP
             sum_time[i] += model.TrTime
-            print(">>>", model.NAME)
+            print("\n>>>", model.NAME)
             print("    Mean Square Error\t\t\t\t= %.4f%s(Avg. %.4f)"%(
-                model.TsMSE, 4-int(np.log10(abs(model.TsMSE)+1)+1)*"\t",
+                model.TsMSE, (3-int(np.log10(abs(model.TsMSE))))*"\t",
                 sum_mse[i]/(round+1)))
             print("    Normalized Mean Square Error\t\t= %.4f%s(Avg. %.4f)"%(
-                model.TsNMSE, 4-int(np.log10(abs(model.TsNMSE)+1)+1)*"\t",
+                model.TsNMSE, (3-int(np.log10(abs(model.TsNMSE))))*"\t",
                 sum_nmse[i]/(round+1)))
             print("    Mean Negative Log Probability\t= %.4f%s(Avg. %.4f)"%(
-                model.TsMNLP, 4-int(np.log10(abs(model.TsMNLP)+1)+1)*"\t",
+                model.TsMNLP, (3-int(np.log10(abs(model.TsMNLP))))*"\t",
                 sum_mnlp[i]/(round+1)))
             print("    Training Time\t\t\t\t\t= %.4f%s(Avg. %.4f)"%(
-                model.TrTime, 4-int(np.log10(abs(model.TrTime)+1)+1)*"\t",
+                model.TrTime, (3-int(np.log10(abs(model.TrTime))))*"\t",
                 sum_time[i]/(round+1)))
             plt.close()
         MSE[i].append(sum_mse[i]/trials_per_model)
@@ -84,7 +84,7 @@ for M in Ms:
 f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
 ax = f.add_subplot(111)
 maxv, minv = 0, 1e5
-labels = [fftype for fftype in fourier_feature_types]
+labels = ["Full Rank", "Rank="+str(rank)]
 lines = []
 for j in range(len(MSE)):
     for i in range(len(Ms)):
@@ -98,7 +98,7 @@ plt.title('Mean Square Error', fontsize=20)
 plt.xlabel('M', fontsize=13)
 plt.ylabel('MSE', fontsize=13)
 legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
-# plt.savefig('boston_housing_mse.png')
+plt.savefig('low_vs_full_housing_mse.png')
 f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
 ax = f.add_subplot(111)
 maxv, minv = 0, 1e5
@@ -111,11 +111,11 @@ for j in range(len(MNLP)):
     line, = plt.plot(Ms, MNLP[j], marker=Line2D.filled_markers[0], label=labels[j])
     lines.append(line)
 ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
-plt.title('Mean Negative Log Likelihood', fontsize=20)
+plt.title('Mean Negative Log Probablity', fontsize=20)
 plt.xlabel('M', fontsize=13)
 plt.ylabel('MNLP', fontsize=13)
 legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
-# plt.savefig('boston_housing_mnlp.png')
+plt.savefig('low_vs_full_housing_mnlp.png')
 f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
 ax = f.add_subplot(111)
 maxv, minv = 0, 1e5
@@ -128,9 +128,9 @@ for j in range(len(TIME)):
     line, = plt.plot(Ms, TIME[j], marker=Line2D.filled_markers[0], label=labels[j])
     lines.append(line)
 ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
-plt.title('Training Time of lowffGPR', fontsize=20)
+plt.title('Training Time', fontsize=20)
 plt.xlabel('M', fontsize=13)
 plt.ylabel('Time (s)', fontsize=13)
 legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
-# plt.savefig('boston_housing_time.png')
+plt.savefig('low_vs_full_housing_time.png')
 plt.show()
