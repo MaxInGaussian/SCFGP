@@ -1,8 +1,8 @@
 #OffGPR
 
-    OffGPR is a proposed variant of [Gaussian process regression](http://www.gaussianprocess.org/gpml/) that based on optimizing Fourier features. 
+OffGPR is a proposed variant of [Gaussian process regression](http://www.gaussianprocess.org/gpml/) that based on optimizing Fourier features. 
 
-This library, OffGPR is implemented in python using Theano. It was originally
+It is implemented in python using Theano. It was originally
 designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
 
 ###Highlights of OffGPR
