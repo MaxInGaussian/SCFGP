@@ -21,10 +21,20 @@ burden in each step of optimization, and also render faster convergence and a st
 - Compared with other 
 state-of-the-art regressors, OffGPR usually gives the most accurate prediction on the benchmark datasets of regression.
 
-#Dependencies
-
 # Installation
+   
+### OffGPR
 
+To install OffGPR, use pip:
+
+    $ pip install OffGPR
+
+Or clone this repo:
+
+    $ git clone https://github.com/MaxInGaussian/OffGPR.git
+    $ python setup.py install
+
+## Dependencies
 ### Theano
     Theano is used due to its nice and simple coding style to represent tedious formulas of OffGPR, and
     the capability of computing automatic differentiation efficiently.
@@ -39,16 +49,6 @@ To install scikit-learn, see this page:
 
    https://github.com/scikit-learn/scikit-learn
    
-### OffGPR
-To install OffGPR, use pip:
-
-    $ pip install OffGPR
-
-Or clone this repo:
-
-    $ git clone https://github.com/MaxInGaussian/OffGPR.git
-    $ python setup.py install
-
 #License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.
