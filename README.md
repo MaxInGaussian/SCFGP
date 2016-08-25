@@ -1,8 +1,20 @@
 #OffGPR
 
-OffGPR is a proposed variant of Gaussian process regression (GPR). It optimizes
-the Fourier features so as to "learn" a tailmade covariance matrix from the data
-. This removes the necessity of searching for an appropriate kernel function, 
+OffGPR is a proposed variant of Gaussian process regression (GPR) that based on
+optimization of Fourier features. The lightlight inside this model is the use of 
+low-rank frequency matrix for sparse approximation of Fourier features. It is 
+intended to show that low-rank frequency matrix is able to lower the computational 
+burden in each step of optimization, and also render faster convergence and a stabler result.
+
+###Key Features of OffGPR
+
+- It optimizes
+the Fourier features so as to "learn" a tailmade covariance matrix from the data. 
+This removes the necessity of deciding which kernel function to use in different problems.
+
+- It gives the 
+
+- It relax the 
 and also speeds up the original regression ([Rasmussen & Williams]
 (http://www.gaussianprocess.org/gpml/)).
 
