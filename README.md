@@ -23,7 +23,7 @@ state-of-the-art regressors, OffGPR usually gives the most accurate prediction o
 
 #Dependencies
 
-### Theano:
+### Theano
     Theano is used due to its nice and simple coding style to represent tedious formulas of OffGPR, and
     the capability of computing automatic differentiation efficiently.
     
@@ -31,10 +31,12 @@ To install Theano, see this page:
 
    http://deeplearning.net/software/theano/install.html
 
-For the documentation, see the project website of Theano:
+### scikit-learn (only used in the experiments)
+    
+To install scikit-learn, see this page:
 
-   http://deeplearning.net/software/theano/
-
+   https://github.com/scikit-learn/scikit-learn
+   
 # Installation
 
 To install OffGPR, use pip:
