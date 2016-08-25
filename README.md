@@ -18,7 +18,7 @@ This removes the necessity of deciding which kernel function to use in different
 intended to show that low-rank frequency matrix is able to lower the computational 
 burden in each step of optimization, and also render faster convergence and a stabler result.
 
-- Compared with different 
+- Compared with other 
 state-of-the-art regressors, OffGPR usually gives the most accurate prediction on the benchmark datasets of regression.
 
 #Dependencies
