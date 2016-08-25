@@ -12,7 +12,7 @@ designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
 the Fourier features so as to "learn" a tailmade covariance matrix from the data. 
 This removes the necessity of deciding which kernel function to use in different problems.
 
-- OffGPR provides a variety of ways to define the Fourier features
+- OffGPR implements a variety of formulation to transform the optimized Fourier features to covariance matrix, including the typical sin-cos concatenation introduced by [Miguel](http://www.jmlr.org/papers/v11/lazaro-gredilla10a.html), and the generalized approach described by [Yarin](http://jmlr.org/proceedings/papers/v37/galb15.html).
 
 - OffGPR uses low-rank frequency matrix for sparse approximation of Fourier features. It is 
 intended to show that low-rank frequency matrix is able to lower the computational 
