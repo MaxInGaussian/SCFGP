@@ -294,7 +294,7 @@ class SCFGP(object):
             self.y_pred = self.y_nml.backward_transform(y_pred)
             self.TrMSE = np.mean((self.y_pred-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
-            self.message("="*18, "TRAINING ITERATION", iter, "="*18)
+            self.message("="*20, "TRAINING ITERATION", iter, "="*20)
             self.message(self.NAME, " TrCost = %.4f"%(self.TrCost))
             self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
             self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))

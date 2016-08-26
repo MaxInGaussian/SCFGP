@@ -34,10 +34,19 @@ _y_test = label_binarize(y_test, classes=labels)
 Ms = [10, 30, 100]
 for M in Ms:
     model = SCFGP(rank=2, feature_size=M)
-    model.fit(X_train, _y_train, X_test, _y_test)
+    model.fit(X_train, _y_train)
     fig = plt.figure(1, figsize=(8, 6), facecolor='white', dpi=120)
     plt.title('Mapping 784 to 2 dimensions using %d Fourier features'%(
         M), fontsize=15)
     ax = fig.add_subplot(111)
+    c = np.reshape(model.hyper[2:2+model.D*model.R], (model.D, model.R))
+    tX = model.X_nml.forward_transform(X_test).dot(c)
+    for i in range(tX.shape[0]):
+        ax.plot(tX[i, 0], tX[i, 1], 'o',
+            color=plt.cm.Set1(y_test[i]/len(labels)))
+    minx, maxx = min(tX[:, 0]), max(tX[:, 0])
+    miny, maxy = min(tX[:, 1]), max(tX[:, 1])
+    ax.set_xlim([minx-(maxx-minx)*0.05,maxx+(maxx-minx)*0.05])
+    ax.set_ylim([miny-(maxy-miny)*0.05,maxy+(maxy-miny)*0.05])
     plt.savefig('dimensionality_reduction_M_%d.png'%(M))
     plt.show()
