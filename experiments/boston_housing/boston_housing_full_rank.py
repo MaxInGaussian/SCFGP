@@ -29,7 +29,7 @@ def load_boston_data(proportion=106./506):
 trials_per_model = 5
 X_train, y_train, X_test, y_test = load_boston_data()
 rank = "full"
-Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*10 for i in range(10)]
+Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*5 for i in range(10)]
 try:
     best_model = SCFGP(msg=False)
     best_model.load("best_full_rank.pkl")
