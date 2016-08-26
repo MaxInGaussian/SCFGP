@@ -11,7 +11,7 @@ try:
 except:
     print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
-    path.append("../")
+    path.append("../../")
     from SCFGP import SCFGP
     print("done.")
 

@@ -30,7 +30,7 @@ class SCFGP(object):
     add_low_rank_freq = True
     precompute_c_method = None
     R, M, N, D, P = -1, -1, -1, -1, -1
-    X, y, Xs, ys, hyper, invL, AiPhiTY, train_func, pred_func = [None]*9
+    pre_c, X, y, Xs, ys, hyper, invL, AiPhiTY, train_func, pred_func = [None]*10
     TrCost, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [np.inf]*8
     
     def __init__(self,
@@ -349,7 +349,7 @@ class SCFGP(object):
             self.add_low_rank_freq, self.precompute_c_method)
         train_data = (self.X, self.y)
         normalizers = (self.X_nml, self.y_nml)
-        computed_matrices = (self.hyper, self.invL, self.AiPhiTY)
+        computed_matrices = (self.pre_c, self.hyper, self.invL, self.AiPhiTY)
         performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TsMAE,
             self.TsMSE, self.TsRMSE, self.TsNMSE, self.TsMNLP, self.SCORE)
         save_pack = [prior_setting, train_data, normalizers,
@@ -370,7 +370,7 @@ class SCFGP(object):
         _, self.P = self.y.shape
         self.build_theano_model()
         self.X_nml, self.y_nml = load_pack[2]
-        self.hyper, self.invL, self.AiPhiTY = load_pack[3]
+        self.pre_c, self.hyper, self.invL, self.AiPhiTY = load_pack[3]
         self.TrCost, self.TrMSE, self.TrNMSE = load_pack[4][:3]
         self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][3:6]
         self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][6:]

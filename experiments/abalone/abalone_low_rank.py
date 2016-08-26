@@ -15,11 +15,16 @@ except:
     from SCFGP import SCFGP
     print("done.")
 
-def load_boston_data(proportion=106./506):
+def load_abalone_data(proportion=1044./4177):
     from sklearn import datasets
+    from sklearn import preprocessing
     from sklearn import cross_validation
-    boston = datasets.load_boston()
-    X, y = boston.data, boston.target
+    abalone = datasets.fetch_mldata('regression-datasets abalone')
+    X_cate = np.array([abalone.target[i].tolist()
+        for i in range(abalone.target.shape[0])])
+    X_cate = preprocessing.label_binarize(X_cate, np.unique(X_cate))
+    X = np.hstack((X_cate, abalone.data))
+    y = abalone.int1[0].T.astype(np.float64)
     y = y[:, None]
     X = X.astype(np.float64)
     X_train, X_test, y_train, y_test = \
@@ -27,7 +32,7 @@ def load_boston_data(proportion=106./506):
     return X_train, y_train, X_test, y_test
 
 trials_per_model = 5
-X_train, y_train, X_test, y_test = load_boston_data()
+X_train, y_train, X_test, y_test = load_abalone_data()
 rank = int(X_train.shape[1]/2+1)
 Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*10 for i in range(10)]
 try:
@@ -52,7 +57,7 @@ for M in Ms:
         funcs = None
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
-            X_train, y_train, X_test, y_test = load_boston_data()
+            X_train, y_train, X_test, y_test = load_abalone_data()
             model = SCFGP(rank, M, fftype=fftype, msg=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
@@ -105,4 +110,4 @@ for en, (metric_name, metric_results) in metrics.items():
     plt.xlabel('# Fourier features', fontsize=13)
     plt.ylabel(en, fontsize=13)
     legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
-    plt.savefig('boston_housing_low_rank_'+en.lower()+'.png')
+    plt.savefig('abalone_low_rank_'+en.lower()+'.png')
