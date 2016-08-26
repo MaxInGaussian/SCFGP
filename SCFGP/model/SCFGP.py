@@ -46,17 +46,8 @@ class SCFGP(object):
         self.use_inducing_inputs = use_inducing_inputs
         self.use_optimized_phases = use_optimized_phases
         self.add_low_rank_freq = add_low_rank_freq
-        if(rank != "full"):
+        if(self.R != "full"):
             self.precompute_c_method = precompute_c_method
-            if(precompute_c_method == "rpca"):
-                from sklearn.decomposition import RandomizedPCA
-                self.pre = RandomizedPCA(n_components=self.R, n_iter=200)
-            elif(precompute_c_method == "rbm"):
-                from sklearn.neural_network import BernoulliRBM
-                self.pre = BernoulliRBM(n_components=self.R, n_iter=200)
-            elif(precompute_c_method == "spc"):
-                from sklearn.decomposition import DictionaryLearning
-                self.pre = DictionaryLearning(n_components=self.R, n_iter=200)
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.msg = msg
@@ -92,21 +83,19 @@ class SCFGP(object):
             Omega = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
                 (self.D, self.M));t_ind+=self.D*self.M
         else:
-            c = T.reshape(hyper[t_ind:t_ind+self.D*self.R],
-                (self.D, self.R));t_ind+=self.D*self.R
+            if(self.precompute_c_method is None):
+                c = T.reshape(hyper[t_ind:t_ind+self.D*self.R],
+                    (self.D, self.R));t_ind+=self.D*self.R
+            else:
+                c = theano.shared(self.pre_c)+\
+                    T.reshape(hyper[t_ind:t_ind+self.D*self.R],
+                    (self.D, self.R));t_ind+=self.D*self.R
             d = T.reshape(hyper[t_ind:t_ind+self.M*self.R],
                 (self.M, self.R));t_ind+=self.M*self.R
             Omega = T.dot(c, d.T)
         if(self.use_inducing_inputs):
-            if(self.R == "full"):
-                Z = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
-                    (self.D, self.M))[None, :, :];t_ind+=self.D*self.M
-            else:
-                zc = T.reshape(hyper[t_ind:t_ind+self.D*self.R],
-                    (self.D, self.R));t_ind+=self.D*self.R
-                zd = T.reshape(hyper[t_ind:t_ind+self.M*self.R],
-                    (self.M, self.R));t_ind+=self.M*self.R
-                Z = zc.dot(zd.T)[None, :, :]
+            Z = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
+                (self.D, self.M))[None, :, :];t_ind+=self.D*self.M
             XOmega = T.sum((X[:, :, None]-Z)*Omega[None, :, :], 1)
             XsOmega = T.sum((Xs[:, :, None]-Z)*Omega[None, :, :], 1)
         else:
@@ -163,8 +152,6 @@ class SCFGP(object):
 
     def init_model(self):
         a, b = 0, -2*np.log(4.)
-        if(self.precompute_c_method is not None):
-            c = self.pre_c.copy()
         best_hyper, min_cost = None, np.inf
         for _ in range(50):
             hyper_list = [[a, b]]
@@ -172,19 +159,13 @@ class SCFGP(object):
                 Omega = np.random.randn(self.D, self.M)
                 hyper_list.append(Omega.ravel())
             else:
-                if(self.precompute_c_method is None):
-                    c = np.random.rand(self.D, self.R)
+                c = np.random.rand(self.D, self.R)
                 d = np.random.randn(self.M, self.R)
                 hyper_list.extend([c.ravel(), d.ravel()])
             cost = 0
             if(self.use_inducing_inputs):
-                if(self.R == "full"):
-                    Z = np.random.randn(self.D, self.M)
-                    hyper_list.append(Z.ravel())
-                else:
-                    zc = np.random.rand(self.D, self.R)
-                    zd = np.random.randn(self.M, self.R)
-                    hyper_list.extend([zc.ravel(), zd.ravel()])
+                Z = np.random.randn(self.D, self.M)
+                hyper_list.append(Z.ravel())
             if(self.use_optimized_phases):
                 ph = np.random.rand(self.M*2)*2*np.pi
                 hyper_list.append(ph.ravel())
@@ -206,20 +187,35 @@ class SCFGP(object):
         self.y = self.y_nml.forward_transform(y)
         self.N, self.D = self.X.shape
         _, self.P = self.y.shape
+        if(self.R != "full"):
+            if(self.R > self.D):
+                self.R = self.D
+            if(self.precompute_c_method == "rpca"):
+                from sklearn.decomposition import RandomizedPCA
+                self.pre = RandomizedPCA(n_components=self.R)
+            elif(self.precompute_c_method == "rbm"):
+                from sklearn.neural_network import BernoulliRBM
+                self.pre = BernoulliRBM(n_components=self.R, n_iter=200)
+            elif(self.precompute_c_method == "spc"):
+                from sklearn.decomposition import DictionaryLearning
+                self.pre = DictionaryLearning(n_components=self.R, n_iter=200)
         if(self.precompute_c_method is not None):
             self.pre.fit(self.X)
             self.pre_c = self.pre.components_.T
-        if(self.train_func is not None or funcs is not None):
-            self.train_func, self.pred_func = funcs
-        else:
+        if(funcs is None):
             self.build_theano_model()
+        else:
+            self.train_func, self.pred_func = funcs
         if(Xs is not None and ys is not None):
             self.Xs = self.X_nml.forward_transform(Xs)
             self.ys = self.y_nml.forward_transform(ys)
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", 500, 8, 1e-4, [0.5*self.M/self.N])
+            opt = Optimizer("smorms3", 500, 20, 0.0005, [0.5*self.M/self.N])
+            if(self.R != "full"):
+                opt.max_cvrg_iter /= 1+self.R/self.D
+                opt.cvrg_tol *= 1+self.R/self.D
         if(plot_training):
             iter_list = []
             cost_list = []

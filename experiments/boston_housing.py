@@ -27,10 +27,9 @@ def load_low_vs_full_data(proportion=0.1):
     return X_train, y_train, X_test, y_test
 
 X_train, Y_train, X_test, Y_test = load_low_vs_full_data()
-rank = 3
-trials_per_model = 3
-Ms = [30, 40, 50, 60, 70]
-fourier_feature_types = ["zflr", "zf"]
+trials_per_model = 5
+Ms = [10, 20, 30, 40, 50]
+fourier_feature_types = ["zph", "zphlr"]
 MSE = [[] for _ in range(len(fourier_feature_types))]
 NMSE = [[] for _ in range(len(fourier_feature_types))]
 MNLP = [[] for _ in range(len(fourier_feature_types))]
@@ -48,17 +47,17 @@ for M in Ms:
             tf2 = True
         if("lr" in fftype):
             tf3 = True
-            rank = 4
+            rank = 5
         else:
             rank = "full"
         funcs = None
         for round in range(trials_per_model):
-            model = SCFGP(rank, M, tf1, tf2, tf3, msg=False)
+            model = SCFGP(rank, M, tf1, tf2, tf3, "rpca", msg=False)
             if(funcs is None):
-                model.fit(X_train, Y_train, X_test, Y_test)
+                model.fit(X_train, Y_train, X_test, Y_test, plot_training=False)
                 funcs = (model.train_func, model.pred_func)
             else:
-                model.fit(X_train, Y_train, X_test, Y_test, funcs)
+                model.fit(X_train, Y_train, X_test, Y_test, funcs, plot_training=False)
             sum_mse[i] += model.TsMSE
             sum_nmse[i] += model.TsNMSE
             sum_mnlp[i] += model.TsMNLP
@@ -66,7 +65,7 @@ for M in Ms:
             print("\n>>>", model.NAME)
             print("    Mean Square Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
                 model.TsMSE, "  ", sum_mse[i]/(round+1)))
-            print("    Normalized Mean Square Error\t= %.3f%s(Avg. %.4f)"%(
+            print("    Normalized Mean Square Error\t\t= %.3f%s(Avg. %.4f)"%(
                 model.TsNMSE, "  ", sum_nmse[i]/(round+1)))
             print("    Mean Negative Log Probability\t= %.3f%s(Avg. %.4f)"%(
                 model.TsMNLP, "  ", sum_mnlp[i]/(round+1)))
