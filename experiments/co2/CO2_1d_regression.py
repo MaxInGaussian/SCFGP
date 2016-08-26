@@ -11,7 +11,7 @@ try:
 except:
     print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
-    path.append("../")
+    path.append("../../")
     from SCFGP import SCFGP
     print("done.")
 
@@ -26,20 +26,11 @@ def load_1d_function_data(proportion=0.1):
     return X, y
 
 Ms = [10, 20, 30]
-fourier_feature_types = ["f", "flr", "ph", "phlr", "zf", "zflr", "zph", "zphlr"]
+fourier_feature_types = ["f", "ph", "zf", "zph"]
 X, y = load_1d_function_data()
 fig_num = 1
-for ftype in feature_types:
-    tf1, tf2, tf3 = False, False, False
-    if("z" in fftype):
-        tf1 = True
-    if("ph" in fftype):
-        tf2 = True
-    if("lr" in fftype):
-        tf3 = True
-        rank = 3
-    else:
-        rank = "full"
+for fftype in fourier_feature_types:
+    rank = "full"
     for M in Ms:
-        model = SCFGP(rank, M, tf1, tf2, tf3)
+        model = SCFGP(rank, M, fftype=fftype)
         model.fit(X, y, plot_1d_function=True)
