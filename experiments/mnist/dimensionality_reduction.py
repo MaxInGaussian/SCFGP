@@ -7,12 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import label_binarize
 try:
-    from SCFGP import SCFGP, Optimizer
+    from SCFGP import SCFGP
 except:
     print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
-    path.append("../")
-    from SCFGP import SCFGP, Optimizer
+    path.append("../../")
+    from SCFGP import SCFGP
     print("done.")
 
     
@@ -32,13 +32,12 @@ X_train, y_train, X_test, y_test, labels = load_mnist_data()
 _y_train = label_binarize(y_train, classes=labels)
 _y_test = label_binarize(y_test, classes=labels)
 Ms = [10, 30, 100]
-opt = Optimizer("smorms3", 10000000, 10, 1e-3, [1e-2])
 for M in Ms:
+    model = SCFGP(rank=2, feature_size=M)
+    model.fit(X_train, _y_train, X_test, _y_test)
     fig = plt.figure(1, figsize=(8, 6), facecolor='white', dpi=120)
+    plt.title('Mapping 784 to 2 dimensions using %d Fourier features'%(
+        M), fontsize=15)
     ax = fig.add_subplot(111)
-    plot = (fig, ax)
-    model = SCFGP(rank=2, feature_size=10)
-    model.fit(X_train, _y_train, X_test, _y_test, opt=opt)
-    plt.title('Mapping 784 to 2 dimension By SCFGP (M=%d)'%(M), fontsize=20)
-    plt.savefig('dimensionality_reduction_%d.png'%(M))
+    plt.savefig('dimensionality_reduction_M_%d.png'%(M))
     plt.show()

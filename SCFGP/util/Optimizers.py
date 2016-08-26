@@ -42,11 +42,11 @@ class Optimizer(object):
         v = np.zeros_like(x)
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step and last_f is not None and f > 0 and last_f > 0):
-                if(last_f < f):
-                    step_size *= max(0.9, (last_f/f)**0.2)
+            if(adjust_step):
+                if(min_e < e):
+                    step_size *= max(0.9, (min_e/e)**0.2)
                 else:
-                    step_size *= min(1.2, (last_f/f)**0.3)
+                    step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
@@ -78,11 +78,11 @@ class Optimizer(object):
         avg_sq_grad = np.zeros_like(x)
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step and last_f is not None and f > 0 and last_f > 0):
-                if(last_f < f):
-                    step_size *= max(0.9, (last_f/f)**0.2)
+            if(adjust_step):
+                if(min_e < e):
+                    step_size *= max(0.9, (min_e/e)**0.2)
                 else:
-                    step_size *= min(1.2, (last_f/f)**0.3)
+                    step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
@@ -115,11 +115,11 @@ class Optimizer(object):
         v = np.zeros_like(x)
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step and last_f is not None and f > 0 and last_f > 0):
-                if(last_f < f):
-                    step_size *= max(0.9, (last_f/f)**0.2)
+            if(adjust_step):
+                if(min_e < e):
+                    step_size *= max(0.9, (min_e/e)**0.2)
                 else:
-                    step_size *= min(1.2, (last_f/f)**0.3)
+                    step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
@@ -158,11 +158,11 @@ class Optimizer(object):
         adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step and last_f is not None and f > 0 and last_f > 0):
-                if(last_f < f):
-                    step_size *= max(0.9, (last_f/f)**0.2)
+            if(adjust_step):
+                if(min_e < e):
+                    step_size *= max(0.9, (min_e/e)**0.2)
                 else:
-                    step_size *= min(1.2, (last_f/f)**0.3)
+                    step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
