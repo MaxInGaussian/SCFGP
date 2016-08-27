@@ -46,7 +46,32 @@ To install Theano, see this page:
 To install scikit-learn, see this page:
 
    https://github.com/scikit-learn/scikit-learn
-   
+
+# Use SCFGP for Regression
+```python
+from SCFGP import *
+model = SCFGP(rank=rank, feature_size=M, fftype='zph')
+model.fit(X_train, y_train, X_test, y_test)
+```
+## Predict Boston Housing Prices
+![BostonHousingMSE](experiments/boston_housing_mse.png?raw=true "Boston Housing MSE")
+![BostonHousingMNLP](experiments/boston_housing_mnlp.png?raw=true "Boston Housing MNLP")
+![BostonHousingTIME](experiments/boston_housing_time.png?raw=true "Boston Housing Time")
+#Use SCFGP for Regression
+```python
+from SCFGP import SCFGP
+model = SCFGP(rank, M, fftype=fftype, msg=False)
+model.fit(X_train, y_train, X_test, y_test)
+```
+## Visualize MNIST
+![MNIST-ZPH-10](experiments/mnist/visualize_mnist_zph_10.png?raw=true "MNIST ZPH 10")
+![MNIST-ZF-10](experiments/mnist/visualize_mnist_zf_10.png?raw=true "MNIST ZF 10")
+![MNIST-PH-10](experiments/mnist/visualize_mnist_ph_10.png?raw=true "MNIST PH 10")
+![MNIST-F-10](experiments/mnist/visualize_mnist_f_10.png?raw=true "MNIST F 10")
+<h3 align="center">
+"The similariy of high-dimensional features over different classes are preserved!"
+</h3>
+
 #License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.
