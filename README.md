@@ -64,19 +64,19 @@ model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<fe
 model.fit(X_train, y_train, X_test, y_test)
 ```
 ## Visualize MNIST
-### 1) Feature Type = Fourier (sine & cosine)
+### Feature Type 1: Fourier (sine & cosine)
 ![MNIST-F-10](experiments/mnist/visualize_mnist_f_10.png?raw=true "MNIST F 10")
 ![MNIST-F-30](experiments/mnist/visualize_mnist_f_30.png?raw=true "MNIST F 10")
 ![MNIST-F-100](experiments/mnist/visualize_mnist_f_100.png?raw=true "MNIST F 10")
-### 2) Feature Type = Fourier (sine & cosine) + Inducing Frequencies
+### Feature Type 2: Fourier (sine & cosine) + Inducing Frequencies
 ![MNIST-ZF-10](experiments/mnist/visualize_mnist_zf_10.png?raw=true "MNIST ZF 10")
 ![MNIST-ZF-30](experiments/mnist/visualize_mnist_zf_30.png?raw=true "MNIST ZF 30")
 ![MNIST-ZF-100](experiments/mnist/visualize_mnist_zf_100.png?raw=true "MNIST ZF 100")
-### 3) Feature Type = Cosine with Adjustable Phases (only cosine)
+### Feature Type 3: Cosine with Adjustable Phases (only cosine)
 ![MNIST-PH-10](experiments/mnist/visualize_mnist_ph_10.png?raw=true "MNIST PH 10")
 ![MNIST-PH-30](experiments/mnist/visualize_mnist_ph_30.png?raw=true "MNIST PH 30")
 ![MNIST-PH-100](experiments/mnist/visualize_mnist_ph_100.png?raw=true "MNIST PH 100")
-### 4) Feature Type = Cosine with Adjustable Phases (only cosine) + Inducing Frequencies
+### Feature Type 4: Cosine with Adjustable Phases (only cosine) + Inducing Frequencies
 ![MNIST-ZPH-10](experiments/mnist/visualize_mnist_zph_10.png?raw=true "MNIST ZPH 10")
 ![MNIST-ZPH-30](experiments/mnist/visualize_mnist_zph_30.png?raw=true "MNIST ZPH 30")
 ![MNIST-ZPH-100](experiments/mnist/visualize_mnist_zph_100.png?raw=true "MNIST ZPH 100")
