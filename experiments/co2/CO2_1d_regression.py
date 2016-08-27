@@ -34,26 +34,5 @@ for fftype in model_types:
         for M in Ms:
             model = Regressor(rank, M, fftype=fftype, msg=False)
             model.fit(X, y, opt=opt, plot_1d_function=True)
+            plt.savefig('co2_%s_%d_%s.png'%(str(rank), M, fftype))
             plt.close()
-            plot_1d_fig = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
-            plot_1d_fig.suptitle(model.NAME, fontsize=15)
-            plot_1d_ax = plot_1d_fig.add_subplot(111)
-            pts = 300
-            errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
-            Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
-            mu, std = model.pred_func(
-                Xplot, model.hyper, model.invL, model.AiPhiTY)
-            mu = mu.ravel()
-            std = std.ravel()
-            for er in errors:
-                plot_1d_ax.fill_between(Xplot[:, 0], mu-er*std, mu+er*std,
-                                alpha=((3-er)/5.5)**1.7, facecolor='blue',
-                                linewidth=0.0)
-            plot_1d_ax.plot(Xplot[:, 0], mu, alpha=0.8, c='black')
-            plot_1d_ax.errorbar(model.X[:, 0],
-                model.y.ravel(), fmt='r.', markersize=5, alpha=0.6)
-            yrng = model.y.max()-model.y.min()
-            plot_1d_ax.set_ylim([
-                model.y.min()-0.5*yrng, model.y.max() + 0.5*yrng])
-            plot_1d_ax.set_xlim([-0.1, 1.1])
-            plot_1d_fig.savefig('co2_%s_%d_%s.png'%(str(rank), M, fftype))

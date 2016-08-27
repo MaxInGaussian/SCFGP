@@ -353,8 +353,9 @@ class Regressor(object):
         train_data = (self.X, self.y)
         normalizers = (self.X_nml, self.y_nml)
         computed_matrices = (self.pre_c, self.hyper, self.invL, self.AiPhiTY)
-        performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TsMAE,
-            self.TsMSE, self.TsRMSE, self.TsNMSE, self.TsMNLP, self.SCORE)
+        performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TrTIME, 
+            self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE,
+                self.TsMNLP, self.SCORE)
         save_pack = [prior_setting, train_data, normalizers,
             computed_matrices, performances]
         with open(path, "wb") as save_f:
@@ -374,9 +375,9 @@ class Regressor(object):
         self.build_theano_model()
         self.X_nml, self.y_nml = load_pack[2]
         self.pre_c, self.hyper, self.invL, self.AiPhiTY = load_pack[3]
-        self.TrCost, self.TrMSE, self.TrNMSE = load_pack[4][:3]
-        self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][3:6]
-        self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][6:]
+        self.TrCost, self.TrMSE, self.TrNMSE, self.TrTIME = load_pack[4][:4]
+        self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][4:7]
+        self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][7:]
 
 
 
