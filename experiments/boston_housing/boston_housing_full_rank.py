@@ -26,7 +26,7 @@ def load_boston_data(proportion=106./506):
         cross_validation.train_test_split(X, y, test_size=proportion)
     return X_train, y_train, X_test, y_test
 
-trials_per_model = 5
+trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
 rank = "full"
 Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*2 for i in range(10)]
