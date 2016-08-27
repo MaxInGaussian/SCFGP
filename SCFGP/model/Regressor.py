@@ -202,8 +202,9 @@ class Regressor(object):
         self.N, self.D = self.X.shape
         _, self.P = self.y.shape
         if(self.R != "full"):
-            if(self.R > self.D):
-                self.R = self.D
+            if(self.precompute_c_method is not None):
+                if(self.R > self.D):
+                    self.R = self.D
             if(self.precompute_c_method == "rpca"):
                 from sklearn.decomposition import RandomizedPCA
                 self.pre = RandomizedPCA(n_components=self.R)
