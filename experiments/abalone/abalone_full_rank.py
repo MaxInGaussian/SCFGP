@@ -68,6 +68,7 @@ for M in Ms:
             if(model_score > best_model_score):
                 best_model_score = model_score
                 model.save("best_full_rank.pkl")
+                best_model = model
             results["MAE"].append(model.TsMAE)
             results["MSE"].append(model.TsMSE)
             results["RMSE"].append(model.TsRMSE)
@@ -78,17 +79,17 @@ for M in Ms:
             print("    Model Selection Score\t\t\t= %.3f%s(Best %.4f)"%(
                 model_score, "  ", best_model_score))
             print("    Mean Absolute Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TsMAE, "  ", np.mean(results["MAE"])))
+                model.TsMAE, "  ", best_model.TsMAE))
             print("    Mean Square Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TsMSE, "  ", np.mean(results["MSE"])))
+                model.TsMSE, "  ", best_model.TsMSE))
             print("    Root Mean Square Error\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TsRMSE, "  ", np.mean(results["RMSE"])))
-            print("    Normalized Mean Square Error\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TsNMSE, "  ", np.mean(results["NMSE"])))
+                model.TsRMSE, "  ", best_model.TsRMSE))
+            print("    Normalized Mean Square Error \t= %.3f%s(Avg. %.4f)"%(
+                model.TsNMSE, "  ", best_model.TsNMSE))
             print("    Mean Negative Log Probability\t= %.3f%s(Avg. %.4f)"%(
-                model.TsMNLP, "  ", np.mean(results["MNLP"])))
+                model.TsMNLP, "  ", best_model.TsMNLP))
             print("    Training Time\t\t\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TrTime, "  ", np.mean(results["TIME"])))
+                model.TrTime, "  ", best_model.TrTIME))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))
 for en, (metric_name, metric_results) in metrics.items():
