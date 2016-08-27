@@ -7,12 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 try:
-    from SCFGP import SCFGP
+    from SCFGP import Regressor
 except:
     print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
     path.append("../../")
-    from SCFGP import SCFGP
+    from SCFGP import Regressor
     print("done.")
 
 def load_abalone_data(proportion=1044./4177):
@@ -36,7 +36,7 @@ X_train, y_train, X_test, y_test = load_abalone_data()
 rank = "full"
 Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*5 for i in range(10)]
 try:
-    best_model = SCFGP(msg=False)
+    best_model = Regressor(msg=False)
     best_model.load("best_full_rank.pkl")
     best_model_score = best_model.SCORE
 except (FileNotFoundError, IOError):
@@ -58,7 +58,7 @@ for M in Ms:
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
             X_train, y_train, X_test, y_test = load_abalone_data()
-            model = SCFGP(rank, M, fftype=fftype, msg=False)
+            model = Regressor(rank, M, fftype=fftype, msg=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)

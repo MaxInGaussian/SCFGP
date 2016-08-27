@@ -40,6 +40,7 @@ class Optimizer(object):
         last_f, f, min_e, e = None, None, np.Infinity, None
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         v = np.zeros_like(x)
+        adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
             if(adjust_step):
@@ -76,6 +77,7 @@ class Optimizer(object):
         last_f, f, min_e, e = None, None, np.Infinity, None
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         avg_sq_grad = np.zeros_like(x)
+        adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
             if(adjust_step):
@@ -113,6 +115,7 @@ class Optimizer(object):
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         m = np.zeros_like(x)
         v = np.zeros_like(x)
+        adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
             if(adjust_step):

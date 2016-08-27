@@ -9,13 +9,17 @@ class Normalizer(object):
     
     " Normalizer (Data Preprocessing) "
 
-    methods = ["linear", "centralize", "standardize", "sigmoid", "uniformize"]
+    methods = ["binarize", "linear", "centralize",
+        "standardize", "sigmoid", "uniformize"]
     
     data = {}
     
     def __init__(self, meth):
         assert meth in self.methods, "Invalid Normalization Method!"
-        if(meth == "linear"):
+        if(meth == "binarize"):
+            from sklearn.preprocessing import LabelBinarizer
+            self.data = {"binarizer": LabelBinarizer(neg_label=-1, pos_label=1)}
+        elif(meth == "linear"):
             self.data = {"cols": None, "min": 0, "max":0}
         elif(meth == "centralize"):
             self.data = {"cols": None, "mu":0}
@@ -28,6 +32,9 @@ class Normalizer(object):
         self.meth = meth
     
     def fit(self, X):
+        if(self.meth == "binarize"):
+            self.data["binarizer"].fit(tX)
+            return
         self.data["cols"] = list(set(range(X.shape[1])).difference(
             np.where(np.all(X == X[0,:], axis = 0))[0]))
         tX = X[:, self.data["cols"]]
@@ -42,6 +49,8 @@ class Normalizer(object):
                 self.data[key] = np.max(tX, axis=0)
     
     def forward_transform(self, X):
+        if(self.meth == "binarize"):
+            return self.data["binarizer"].transform(X)
         tX = X[:, self.data["cols"]]
         if(self.meth == "linear"):
             return (tX-self.data["min"])/(self.data["max"]-self.data["min"])
@@ -61,6 +70,8 @@ class Normalizer(object):
             return np.hstack((np.ones((_X.shape[0], 1)), _X))
     
     def backward_transform(self, X):
+        if(self.meth == "binarize"):
+            return self.data["binarizer"].inverse_transform(X)
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
         if(self.meth == "linear"):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]

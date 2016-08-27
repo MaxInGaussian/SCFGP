@@ -20,9 +20,9 @@ theano.config.mode = 'FAST_RUN'
 theano.config.optimizer = 'fast_run'
 theano.config.reoptimize_unpickled_function = False
 
-class SCFGP(object):
+class Regressor(object):
     
-    " Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process "
+    " SCFGP as Regressor "
 
     ID, NAME, seed, opt, msg, SCORE = "", "", None, None, True, 0
     use_inducing_inputs = True
@@ -76,10 +76,10 @@ class SCFGP(object):
         self.ID = ''.join(
             chr(np.random.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
-        self.NAME = "SCFGP {Rank=%s|Feature Size=%d"%(str(self.R),
-            self.M)+("|IDUC" if self.use_inducing_inputs else "")+\
-            ("|PHAS" if self.use_optimized_phases else "")+\
-            ("|LRFF" if self.add_low_rank_freq else "")+"}"
+        self.fftype = "PH" if self.use_optimized_phases else "F"
+        self.fftype += "Z" if self.use_inducing_inputs else ""
+        self.NAME = "SCFGP {Rank=%s, Feature Size=%d, Feature Type=%s}"%(
+            str(self.R), self.M, self.fftype)
         self.seed = np.prod([ord(c) for c in self.ID])%4294967291
         npr.seed(self.seed)
     
@@ -301,7 +301,8 @@ class SCFGP(object):
             self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xs is not None and ys is not None):
                 self.predict(Xs, ys)
-            callback()
+            if(callback is not None):
+                callback()
             if(iter == -1):
                 return
             if(plot_training):

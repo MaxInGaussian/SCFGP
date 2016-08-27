@@ -3,4 +3,4 @@
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
-from .SCFGP import SCFGP as SCFGP
+from .Regressor import Regressor as Regressor
