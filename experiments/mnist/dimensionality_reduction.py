@@ -5,6 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as anm
 from sklearn.preprocessing import label_binarize
 try:
     from SCFGP import SCFGP
@@ -36,23 +37,26 @@ model_types = ["phz", "fz", "ph", "f"]
 for M in Ms:
     for fftype in model_types:
         model = SCFGP(rank=2, feature_size=M, fftype=fftype)
-        plt.ion()
-        plt.show()
-        plt.title('Mapping 784 to 2 dimensions using %d Fourier '%(M)+\
-            'features (feature type=%s)'%(fftype.upper()), fontsize=15)
-        plt.rcParams['figure.figsize'] = 8, 6
         def callback():
-            plt.cla()
-            c = np.reshape(model.hyper[2:2+model.D*model.R], (model.D, model.R))
-            tX = model.X_nml.forward_transform(X_test).dot(c)
-            for i in range(tX.shape[0]):
-                plt.plot(tX[i, 0], tX[i, 1], 'o',
-                    color=plt.cm.Set1(int(y_test[i])/10.))
-            minx, maxx = min(tX[:, 0]), max(tX[:, 0])
-            miny, maxy = min(tX[:, 1]), max(tX[:, 1])
-            plt.xlim([minx-(maxx-minx)*0.05,maxx+(maxx-minx)*0.05])
-            plt.ylim([miny-(maxy-miny)*0.05,maxy+(maxy-miny)*0.05])
-            plt.draw()
-            plt.pause(0.01)
+            if(model.iter == 1):
+                fig = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
+                fig.suptitle('Mapping 784 to 2 dimensions using %d Fourier '%(M)+\
+                    'features (feature type=%s)'%(fftype.upper()), fontsize=15)
+                ax = fig.add_subplot(111)
+            def animate(i):
+                ax.cla()
+                c = np.reshape(model.hyper[2:2+model.D*model.R], (model.D, model.R))
+                tX = model.X_nml.forward_transform(X_test).dot(c)
+                for i in range(tX.shape[0]):
+                    ax.plot(tX[i, 0], tX[i, 1], 'o',
+                        color=plt.cm.Set1(int(y_test[i])/10.))
+                minx, maxx = min(tX[:, 0]), max(tX[:, 0])
+                miny, maxy = min(tX[:, 1]), max(tX[:, 1])
+                ax.set_xlim([minx-(maxx-minx)*0.05,maxx+(maxx-minx)*0.05])
+                ax.set_ylim([miny-(maxy-miny)*0.05,maxy+(maxy-miny)*0.05])
+                ax.figure.canvas.draw()
+            if(model.iter == 1):
+                ani = anm.FuncAnimation(fig, animate, interval=500)
+            plt.pause(0.001)
         model.fit(X_train, _y_train, callback=callback)
         plt.savefig('visualize_mnist_%s_%d.png'%(fftype, M))

@@ -288,6 +288,7 @@ class SCFGP(object):
                     self.y.min()-0.5*yrng, self.y.max() + 0.5*yrng])
                 plot_1d_ax.set_xlim([-0.1, 1.1])
         def train(iter, hyper):
+            self.iter = iter
             self.hyper = hyper.copy()
             self.invL, self.AiPhiTY, y_pred, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
