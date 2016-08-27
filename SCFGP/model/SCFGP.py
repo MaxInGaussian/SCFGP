@@ -52,9 +52,9 @@ class SCFGP(object):
             self.use_inducing_inputs = False
             self.use_optimized_phases = False
             self.add_low_rank_freq = False
-            if("z" in fftype):
+            if("z" in fftype.lower()):
                 self.use_inducing_inputs = True
-            if("ph" in fftype):
+            if("ph" in fftype.lower()):
                 self.use_optimized_phases = True
             if(rank != "full"):
                 self.add_low_rank_freq = True
@@ -193,7 +193,7 @@ class SCFGP(object):
         self.invL, self.AiPhiTY, self.y_pred, self.cost, _ = self.train_func(
             self.X, self.y, self.hyper)
 
-    def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None,
+    def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
         plot_training=False, plot_1d_function=False):
         self.X_nml.fit(X)
         self.y_nml.fit(y)
@@ -300,6 +300,7 @@ class SCFGP(object):
             self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xs is not None and ys is not None):
                 self.predict(Xs, ys)
+            callback()
             if(iter == -1):
                 return
             if(plot_training):

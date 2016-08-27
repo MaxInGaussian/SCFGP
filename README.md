@@ -66,20 +66,20 @@ model.fit(X_train, y_train, X_test, y_test)
 ## Visualize MNIST
 ### Feature Type 1: Fourier (sine & cosine)
 ![MNIST-F-10](experiments/mnist/visualize_mnist_f_10.png?raw=true "MNIST F 10")
-![MNIST-F-30](experiments/mnist/visualize_mnist_f_30.png?raw=true "MNIST F 10")
-![MNIST-F-100](experiments/mnist/visualize_mnist_f_100.png?raw=true "MNIST F 10")
+![MNIST-F-30](experiments/mnist/visualize_mnist_f_30.png?raw=true "MNIST F 30")
+![MNIST-F-50](experiments/mnist/visualize_mnist_f_50.png?raw=true "MNIST F 50")
 ### Feature Type 2: Fourier (sine & cosine) + Inducing Frequencies
-![MNIST-ZF-10](experiments/mnist/visualize_mnist_zf_10.png?raw=true "MNIST ZF 10")
-![MNIST-ZF-30](experiments/mnist/visualize_mnist_zf_30.png?raw=true "MNIST ZF 30")
-![MNIST-ZF-100](experiments/mnist/visualize_mnist_zf_100.png?raw=true "MNIST ZF 100")
+![MNIST-FZ-10](experiments/mnist/visualize_mnist_fz_10.png?raw=true "MNIST FZ 10")
+![MNIST-FZ-30](experiments/mnist/visualize_mnist_fz_30.png?raw=true "MNIST FZ 30")
+![MNIST-FZ-50](experiments/mnist/visualize_mnist_fz_50.png?raw=true "MNIST FZ 50")
 ### Feature Type 3: Cosine with Adjustable Phases (only cosine)
 ![MNIST-PH-10](experiments/mnist/visualize_mnist_ph_10.png?raw=true "MNIST PH 10")
 ![MNIST-PH-30](experiments/mnist/visualize_mnist_ph_30.png?raw=true "MNIST PH 30")
-![MNIST-PH-100](experiments/mnist/visualize_mnist_ph_100.png?raw=true "MNIST PH 100")
+![MNIST-PH-50](experiments/mnist/visualize_mnist_ph_50.png?raw=true "MNIST PH 50")
 ### Feature Type 4: Cosine with Adjustable Phases (only cosine) + Inducing Frequencies
-![MNIST-ZPH-10](experiments/mnist/visualize_mnist_zph_10.png?raw=true "MNIST ZPH 10")
-![MNIST-ZPH-30](experiments/mnist/visualize_mnist_zph_30.png?raw=true "MNIST ZPH 30")
-![MNIST-ZPH-100](experiments/mnist/visualize_mnist_zph_100.png?raw=true "MNIST ZPH 100")
+![MNIST-PHZ-10](experiments/mnist/visualize_mnist_phz_10.png?raw=true "MNIST PHZ 10")
+![MNIST-PHZ-30](experiments/mnist/visualize_mnist_phz_30.png?raw=true "MNIST PHZ 30")
+![MNIST-PHZ-50](experiments/mnist/visualize_mnist_phz_50.png?raw=true "MNIST PHZ 50")
 <h3 align="center">
 "The similariy of high-dimensional features over different classes are preserved!"
 </h3>
