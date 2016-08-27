@@ -50,17 +50,17 @@ To install scikit-learn, see this page:
 # Use SCFGP for Regression
 ```python
 from SCFGP import *
-model = SCFGP(rank=rank, feature_size=M, fftype='zph')
+model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<feature type>)
 model.fit(X_train, y_train, X_test, y_test)
 ```
 ## Predict Boston Housing Prices
 ![BostonHousingMSE](experiments/boston_housing_mse.png?raw=true "Boston Housing MSE")
 ![BostonHousingMNLP](experiments/boston_housing_mnlp.png?raw=true "Boston Housing MNLP")
 ![BostonHousingTIME](experiments/boston_housing_time.png?raw=true "Boston Housing Time")
-#Use SCFGP for Regression
+#Use SCFGP for Supervised Dimensionality Reduction
 ```python
 from SCFGP import SCFGP
-model = SCFGP(rank, M, fftype=fftype, msg=False)
+model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<feature type>)
 model.fit(X_train, y_train, X_test, y_test)
 ```
 ## Visualize MNIST
