@@ -1,6 +1,6 @@
 #SCFGP
 
-SCFGP is a proposed variant of [Gaussian process regression](http://www.gaussianprocess.org/gpml/) that bases on sparsely correlated Fourier features. 
+SCFGP is a proposed improvement of the model originated from [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/). Its idea is based on the optimization of sparsely correlated Fourier features. 
 It is implemented in python using Theano. It was originally
 designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
 
