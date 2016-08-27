@@ -84,7 +84,7 @@ for M in Ms:
             print("    Mean Negative Log Probability\t= %.3f%s(Avg. %.4f)"%(
                 model.TsMNLP, "  ", best_model.TsMNLP))
             print("    Training Time\t\t\t\t\t= %.3f%s(Avg. %.4f)"%(
-                model.TrTime, "  ", best_model.TrTIME))
+                model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))
 for en, (metric_name, metric_results) in metrics.items():
