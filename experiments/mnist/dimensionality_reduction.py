@@ -38,7 +38,7 @@ for M in Ms:
         model = SCFGP(rank=2, feature_size=M, fftype=fftype)
         model.fit(X_train, _y_train)
         fig = plt.figure(1, figsize=(12, 9), facecolor='white', dpi=120)
-        plt.title('Mapping 784 to 2 dimensions using %d Fourier features (%s)'%(
+        plt.title('Mapping 784 to 2 dimensions using %d Fourier features (feature type=%s)'%(
             M, fftype.upper()), fontsize=15)
         ax = fig.add_subplot(111)
         c = np.reshape(model.hyper[2:2+model.D*model.R], (model.D, model.R))
