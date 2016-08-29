@@ -87,6 +87,10 @@ for M in Ms:
                 model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))
+
+import os
+if not os.path.exists('low_rank_plots'):
+    os.mkdir('low_rank_plots')
 for en, (metric_name, metric_results) in metrics.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
@@ -98,12 +102,13 @@ for en, (metric_name, metric_results) in metrics.items():
             minv = min(minv, metric_results[j][i][0])
             ax.text(Ms[i], metric_results[j][i][0], '%.2f' % (
                 metric_results[j][i][0]), fontsize=5)
-        line, = ax.errorbar(Ms, metric_results[j][j][0],
-            yerr=metric_results[j][j][1], fmt='-o')
+        line = ax.errorbar(Ms,
+            [metric_results[j][i][0] for i in range(len(Ms))], fmt='-o')
         lines.append(line)
+    ax.set_xlim([min(Ms)-10, max(Ms)+10])
     ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
     plt.title(metric_name, fontsize=20)
     plt.xlabel('# Fourier features', fontsize=13)
     plt.ylabel(en, fontsize=13)
-    legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
-    plt.savefig('kin8nm_low_rank_'+en.lower()+'.png')
+    legend = f.legend(handles=lines, labels=model_types, loc=1, shadow=True)
+    plt.savefig('low_rank_plots/'+en.lower()+'.png')
