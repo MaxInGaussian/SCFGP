@@ -18,7 +18,7 @@ class Normalizer(object):
         assert meth in self.methods, "Invalid Normalization Method!"
         if(meth == "binarize"):
             from sklearn.preprocessing import LabelBinarizer
-            self.data = {"binarizer": LabelBinarizer(neg_label=-1, pos_label=1)}
+            self.data = {"binarizer": LabelBinarizer(neg_label=0, pos_label=1)}
         elif(meth == "linear"):
             self.data = {"cols": None, "min": 0, "max":0}
         elif(meth == "centralize"):
@@ -50,7 +50,7 @@ class Normalizer(object):
     
     def forward_transform(self, X):
         if(self.meth == "binarize"):
-            return self.data["binarizer"].transform(X)
+            return self.data["binarizer"].transform(X)/np.sum(X, axis=1)[:, None]
         tX = X[:, self.data["cols"]]
         if(self.meth == "linear"):
             return (tX-self.data["min"])/(self.data["max"]-self.data["min"])
@@ -71,7 +71,9 @@ class Normalizer(object):
     
     def backward_transform(self, X):
         if(self.meth == "binarize"):
-            return self.data["binarizer"].inverse_transform(X)
+            max_to_binary = np.zeros(X.shape)
+            max_to_binary[np.arange(X.shape[0]), np.argmax(X, axis=1)] = 1
+            return self.data["binarizer"].inverse_transform(max_to_binary)
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
         if(self.meth == "linear"):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]
