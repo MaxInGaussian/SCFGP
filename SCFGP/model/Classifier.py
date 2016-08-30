@@ -324,11 +324,11 @@ class Classifier(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.EtawKiPhi, self.alpha, y_pred, self.TrCost, dhyper =\
+            self.EtawKiPhi, self.alpha, self.y_pred, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
-            self.y_pred = self.y_nml.backward_transform(y_pred)
-            self.TrACC = np.mean(self.y_pred==self.y_lbls)
-            self.TrNMSE = np.mean((self.y_pred-y)**2.)/np.var(y)
+            self.y_pred_lbls = self.y_nml.backward_transform(self.y_pred)
+            self.TrACC = np.mean(self.y_pred_lbls==self.y_lbls)
+            self.TrNMSE = np.mean((self.y_pred-self.y)**2.)/np.var(self.y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
             self.message(self.NAME, " TrCost = %.4f"%(self.TrCost))
             self.message(self.NAME, "  TrACC = %.4f"%(self.TrACC))
@@ -364,13 +364,13 @@ class Classifier(object):
         if(ys is not None):
             self.ys = self.y_nml.forward_transform(ys)
             self.ys_lbls = ys.copy()
-            self.TsACC = np.mean(self.ys_pred==self.ys_lbls)
-            self.TsNMSE = self.TsMSE/np.var(ys)
-            self.SCORE = TsACC
+            self.TsACC = np.mean(self.ys_pred_lbls==self.ys_lbls)
+            self.TsNMSE = np.mean((self.ys_pred-self.ys)**2.)/np.var(self.ys)
+            self.SCORE = self.TsACC
             self.message(self.NAME, "  TsACC = %.4f"%(self.TsACC))
             self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
             self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
-        return self.ys_pred, self.ys_pred_std
+        return self.ys_pred_lbls, self.ys_pred, self.ys_pred_std
 
     def save(self, path):
         import pickle

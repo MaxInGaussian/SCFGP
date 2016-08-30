@@ -49,7 +49,7 @@ for M in Ms:
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
             X_train, y_train, X_test, y_test = load_mnist_data()
-            model = Classifier(rank, M, fftype=fftype, msg=False)
+            model = Classifier(rank, M, fftype=fftype, msg=True)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
