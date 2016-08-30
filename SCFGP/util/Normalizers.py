@@ -49,8 +49,8 @@ class Normalizer(object):
     
     def forward_transform(self, X):
         if(self.meth == "categorize"):
-            tX = np.zeros((X.shape[0], self.data["lbls"]))
-            tX[np.arange(X.shape[0]), np.where(X==self.data["lbls"])[1]] = 1
+            tX = np.zeros((self.data["lbls"].shape[0], X.shape[0], 1))
+            tX[np.where(X==self.data["lbls"])[1], np.arange(X.shape[0]), :] = 1
             return tX
         tX = X[:, self.data["cols"]]
         if(self.meth == "linear"):
@@ -72,7 +72,7 @@ class Normalizer(object):
     
     def backward_transform(self, X):
         if(self.meth == "categorize"):
-            return self.data["lbls"][np.argmax(X, axis=1)][:, None]
+            return self.data["lbls"][np.argmax(X, axis=0)]
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
         if(self.meth == "linear"):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]
