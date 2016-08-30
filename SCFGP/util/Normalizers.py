@@ -50,7 +50,7 @@ class Normalizer(object):
     def forward_transform(self, X):
         if(self.meth == "categorize"):
             tX = np.zeros((self.data["lbls"].shape[0], X.shape[0], 1))
-            tX[np.where(X==self.data["lbls"])[1], np.arange(X.shape[0]), :] = 1
+            tX[np.where(X==self.data["lbls"])[1], np.arange(X.shape[0]), 0] = 1
             return tX
         tX = X[:, self.data["cols"]]
         if(self.meth == "linear"):

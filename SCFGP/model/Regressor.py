@@ -30,7 +30,7 @@ class Regressor(object):
     add_low_rank_freq = True
     precompute_c_method = None
     R, M, N, D, P = -1, -1, -1, -1, -1
-    pre_c, X, y, Xs, ys, hyper, invL, AiPhiTY, train_func, pred_func = [None]*10
+    pre_c, X, y, Xs, ys, hyper, invL, alpha, train_func, pred_func = [None]*10
     TrCost, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [np.inf]*8
     
     def __init__(self,
@@ -85,7 +85,7 @@ class Regressor(object):
     
     def build_theano_model(self):
         self.message("Compiling SCFGP theano model...")
-        X, Y, Xs, invL, AiPhiTY = T.dmatrices('X', 'Y', 'Xs', 'invL', 'AiPhiTY')
+        X, Y, Xs, invL, alpha = T.dmatrices('X', 'Y', 'Xs', 'invL', 'alpha')
         N, P, S = X.shape[0], Y.shape[1], Xs.shape[0]
         hyper = T.dvector('hyper')
         t_ind = 0
@@ -138,8 +138,8 @@ class Regressor(object):
         L = sT.cholesky(A)
         invL_ = sT.matrix_inverse(L)
         LiPhiTY = T.dot(invL_, Phi.T.dot(Y))
-        AiPhiTY_ = T.dot(invL_.T, LiPhiTY)
-        y_pred = T.dot(Phi, AiPhiTY_)
+        alpha_ = T.dot(invL_.T, LiPhiTY)
+        y_pred = T.dot(Phi, alpha_)
         mu_omega = T.mean(Omega, axis=1)
         sigma_omega = T.std(Omega, axis=1)
         NLML = N*P/2*T.log(sig2_n*2*np.pi)+1./(2*sig2_n)*(
@@ -150,14 +150,14 @@ class Regressor(object):
         dhyper = T.grad(cost, hyper)
         train_input = [X, Y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [invL_, AiPhiTY_, y_pred, cost, dhyper]
-        train_output_name = ['invL', 'AiPhiTY', 'y_pred', 'cost', 'dhyper']
+        train_output = [invL_, alpha_, y_pred, cost, dhyper]
+        train_output_name = ['invL', 'alpha', 'y_pred', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
-        ys_pred = T.dot(Phis, AiPhiTY)
+        ys_pred = T.dot(Phis, alpha)
         ys_pred_std = sig_n*(1+(invL.dot(Phis.T)**2).sum(0).T)**0.5
-        pred_input = [Xs, hyper, invL, AiPhiTY]
-        pred_input_name = ['Xs', 'hyper', 'invL', 'AiPhiTY']
+        pred_input = [Xs, hyper, invL, alpha]
+        pred_input_name = ['Xs', 'hyper', 'invL', 'alpha']
         pred_output = [ys_pred, ys_pred_std]
         pred_output_name = ['ys_pred', 'ys_pred_std']
         self.pred_func = theano.function(
@@ -184,13 +184,13 @@ class Regressor(object):
                 ph = np.random.rand(self.M*2)*2*np.pi
                 hyper_list.append(ph.ravel())
             hyper = np.concatenate(hyper_list)
-            invL, AiPhiTY, y_pred, cost, _ = self.train_func(self.X, self.y, hyper)
+            invL, alpha, y_pred, cost, _ = self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
         self.hyper = best_hyper.copy()
-        self.invL, self.AiPhiTY, self.y_pred, self.cost, _ = self.train_func(
+        self.invL, self.alpha, self.y_pred, self.cost, _ = self.train_func(
             self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
@@ -274,7 +274,7 @@ class Regressor(object):
                 errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
                 Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
                 mu, std = self.pred_func(
-                    Xplot, self.hyper, self.invL, self.AiPhiTY)
+                    Xplot, self.hyper, self.invL, self.alpha)
                 mu = mu.ravel()
                 std = std.ravel()
                 for er in errors:
@@ -291,7 +291,7 @@ class Regressor(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.invL, self.AiPhiTY, y_pred, self.TrCost, dhyper =\
+            self.invL, self.alpha, y_pred, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.y_pred = self.y_nml.backward_transform(y_pred)
             self.TrMSE = np.mean((self.y_pred-y)**2.)
@@ -325,12 +325,13 @@ class Regressor(object):
 
     def predict(self, Xs, ys=None):
         self.Xs = self.X_nml.forward_transform(Xs)
-        ys_pred, ys_pred_std = self.pred_func(self.Xs, self.hyper, self.invL, self.AiPhiTY)
+        ys_pred, ys_pred_std = self.pred_func(
+            self.Xs, self.hyper, self.invL, self.alpha)
         self.ys_pred = self.y_nml.backward_transform(ys_pred)
         self.ys_pred_std = np.tile(ys_pred_std[:, None],
             (self.P,))*self.y_nml.data["std"][None, :]
         if(ys is not None):
-            self.ys = ys.copy()
+            self.ys = self.y_nml.forward_transform(ys)
             self.TsMAE = np.mean(np.abs(self.ys_pred-ys))
             self.TsMSE = np.mean((self.ys_pred-ys)**2.)
             self.TsRMSE = np.sqrt(np.mean((self.ys_pred-ys)**2.))
@@ -353,7 +354,7 @@ class Regressor(object):
             self.add_low_rank_freq, self.precompute_c_method)
         train_data = (self.X, self.y)
         normalizers = (self.X_nml, self.y_nml)
-        computed_matrices = (self.pre_c, self.hyper, self.invL, self.AiPhiTY)
+        computed_matrices = (self.pre_c, self.hyper, self.invL, self.alpha)
         performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime, 
             self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE,
                 self.TsMNLP, self.SCORE)
@@ -375,7 +376,7 @@ class Regressor(object):
         _, self.P = self.y.shape
         self.build_theano_model()
         self.X_nml, self.y_nml = load_pack[2]
-        self.pre_c, self.hyper, self.invL, self.AiPhiTY = load_pack[3]
+        self.pre_c, self.hyper, self.invL, self.alpha = load_pack[3]
         self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime = load_pack[4][:4]
         self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][4:7]
         self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][7:]

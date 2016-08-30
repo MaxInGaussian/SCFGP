@@ -4,3 +4,4 @@
 ################################################################################
 
 from .Regressor import Regressor as Regressor
+from .Classifier import Classifier as Classifier
