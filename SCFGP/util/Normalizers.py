@@ -9,16 +9,15 @@ class Normalizer(object):
     
     " Normalizer (Data Preprocessing) "
 
-    methods = ["binarize", "linear", "centralize",
+    methods = ["categorize", "linear", "centralize",
         "standardize", "sigmoid", "uniformize"]
     
     data = {}
     
     def __init__(self, meth):
         assert meth in self.methods, "Invalid Normalization Method!"
-        if(meth == "binarize"):
-            from sklearn.preprocessing import LabelBinarizer
-            self.data = {"binarizer": LabelBinarizer(neg_label=0, pos_label=1)}
+        if(meth == "categorize"):
+            self.data = {"lbls": None}
         elif(meth == "linear"):
             self.data = {"cols": None, "min": 0, "max":0}
         elif(meth == "centralize"):
@@ -32,8 +31,8 @@ class Normalizer(object):
         self.meth = meth
     
     def fit(self, X):
-        if(self.meth == "binarize"):
-            self.data["binarizer"].fit(tX)
+        if(self.meth == "categorize"):
+            self.data["lbls"] = np.unique(X)
             return
         self.data["cols"] = list(set(range(X.shape[1])).difference(
             np.where(np.all(X == X[0,:], axis = 0))[0]))
@@ -49,8 +48,10 @@ class Normalizer(object):
                 self.data[key] = np.max(tX, axis=0)
     
     def forward_transform(self, X):
-        if(self.meth == "binarize"):
-            return self.data["binarizer"].transform(X)/np.sum(X, axis=1)[:, None]
+        if(self.meth == "categorize"):
+            tX = np.zeros((X.shape[0], self.data["lbls"]))
+            tX[np.arange(X.shape[0]), np.where(X==self.data["lbls"])[1]] = 1
+            return tX
         tX = X[:, self.data["cols"]]
         if(self.meth == "linear"):
             return (tX-self.data["min"])/(self.data["max"]-self.data["min"])
@@ -70,10 +71,8 @@ class Normalizer(object):
             return np.hstack((np.ones((_X.shape[0], 1)), _X))
     
     def backward_transform(self, X):
-        if(self.meth == "binarize"):
-            max_to_binary = np.zeros(X.shape)
-            max_to_binary[np.arange(X.shape[0]), np.argmax(X, axis=1)] = 1
-            return self.data["binarizer"].inverse_transform(max_to_binary)
+        if(self.meth == "categorize"):
+            return self.data["lbls"][np.argmax(X, axis=1)][:, None]
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
         if(self.meth == "linear"):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]
