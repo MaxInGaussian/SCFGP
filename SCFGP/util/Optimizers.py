@@ -12,14 +12,17 @@ class Optimizer(object):
     methods = ["sgd", "rmsprop", "adam", "smorms3"]
     
     max_iter, max_cvrg_iter, cvrg_tol, ln_params = 0, 0, 0, []
+    stop_by_nmse = True
     
-    def __init__(self, meth, max_iter, max_cvrg_iter, cvrg_tol, ln_params):
+    def __init__(self, meth, ln_params, max_iter, max_cvrg_iter, cvrg_tol,
+        stop_by_nmse=True):
         assert meth in self.methods, "Invalid Optimization Method!"
         self.meth = meth
         self.max_iter = max_iter
         self.max_cvrg_iter = max_cvrg_iter
         self.cvrg_tol = cvrg_tol
         self.ln_params = ln_params
+        self.stop_by_nmse = stop_by_nmse
     
     def run(self, train, x0):
         if(self.meth == "sgd"):
@@ -43,12 +46,14 @@ class Optimizer(object):
         adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step):
+            if(adjust_step and e > 0 and min_e > 0):
                 if(min_e < e):
                     step_size *= max(0.9, (min_e/e)**0.2)
                 else:
                     step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
+            if(not self.stop_by_nmse):
+                e = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
@@ -80,12 +85,14 @@ class Optimizer(object):
         adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step):
+            if(adjust_step and e > 0 and min_e > 0):
                 if(min_e < e):
                     step_size *= max(0.9, (min_e/e)**0.2)
                 else:
                     step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
+            if(not self.stop_by_nmse):
+                e = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
@@ -118,12 +125,14 @@ class Optimizer(object):
         adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step):
+            if(adjust_step and e > 0 and min_e > 0):
                 if(min_e < e):
                     step_size *= max(0.9, (min_e/e)**0.2)
                 else:
                     step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
+            if(not self.stop_by_nmse):
+                e = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
@@ -161,12 +170,14 @@ class Optimizer(object):
         adjust_step = True
         for i in range(self.max_iter):
             f, e, g = train(i+1, x)
-            if(adjust_step):
+            if(adjust_step and e > 0 and min_e > 0):
                 if(min_e < e):
                     step_size *= max(0.9, (min_e/e)**0.2)
                 else:
                     step_size *= min(1.2, (min_e/e)**0.3)
             last_f = f
+            if(not self.stop_by_nmse):
+                e = f
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1

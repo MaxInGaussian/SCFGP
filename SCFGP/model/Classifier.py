@@ -260,7 +260,7 @@ class Classifier(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", 500, 8, 1e-4, [0.05])
+            opt = Optimizer("smorms3", [0.05], 500, 10, 1e-2, False)
             if(self.R != "full"):
                 opt.max_cvrg_iter /= 1+self.R/self.D
                 opt.cvrg_tol *= 1+self.R/self.D
@@ -381,7 +381,7 @@ class Classifier(object):
         normalizers = (self.X_nml, self.y_nml)
         computed_matrices = (self.pre_c, self.hyper, self.EtawKiPhi, self.alpha)
         performances = (self.TrCost, self.TrACC, self.TrNMSE, self.TrTime, 
-            self.TsACC, self.TsNMSE, self.TsMNLP, self.SCORE)
+            self.TsACC, self.TsNMSE, self.SCORE)
         save_pack = [prior_setting, train_data, normalizers,
             computed_matrices, performances]
         with open(path, "wb") as save_f:
