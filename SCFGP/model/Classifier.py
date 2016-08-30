@@ -32,7 +32,7 @@ class Classifier(object):
     R, M, N, D, P = -1, -1, -1, -1, -1
     pre_c, X, y, y_lbls, Xs, ys, ys_pred, ys_pred_std, ys_pred_lbls = [None]*9
     hyper, EtawKiPhi, alpha, train_func, pred_func = [None]*5
-    TrCost, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE = [np.inf]*7
+    TrCost, TrACC, TsACC, TsSCORE = [np.inf]*4
     
     def __init__(self,
                  rank=-1,
@@ -170,11 +170,10 @@ class Classifier(object):
         EtawKiPhi_ = _3dot(EtawKi, Phi)
         alpha_ = _3dot(EtawKi, t)
         y_pred = _3dot(Phi, alpha_)
-        mu_omega = T.mean(Omega, axis=2)
-        sigma_omega = T.std(Omega, axis=2)
+        mu_omega = T.mean(T.mean(Omega, axis=0), axis=1)
+        sigma_omega = T.std(T.mean(Omega, axis=0), axis=1)
         NLML = 1./2*_3dot(_3dot(_3T(t), wi*wKi), t).sum()+\
             T.log(_3diagonal(L)).sum()-\
-            1./2*_3dot(_3T(u), w*u).sum()-(Y*theta-T.log(C)).sum()-\
             1./2*(sigma_omega+mu_omega**2-T.log(sigma_omega)-1).sum()
         cost = NLML/N
         dhyper = T.grad(cost, hyper)
@@ -260,7 +259,7 @@ class Classifier(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05], 500, 10, 1e-2, False)
+            opt = Optimizer("smorms3", [0.05], 500, 10, 1./self.N)
             if(self.R != "full"):
                 opt.max_cvrg_iter /= 1+self.R/self.D
                 opt.cvrg_tol *= 1+self.R/self.D
@@ -268,8 +267,8 @@ class Classifier(object):
         if(plot_training):
             iter_list = []
             cost_list = []
-            train_mse_list = []
-            test_mse_list = []
+            train_acc_list = []
+            test_acc_list = []
             plot_train_fig, plot_train_axarr = plt.subplots(
                 2, figsize=(8, 6), facecolor='white', dpi=120)
             plot_train_fig.suptitle(self.NAME, fontsize=15)
@@ -283,18 +282,18 @@ class Classifier(object):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
                     cost_list.pop(0)
-                    train_mse_list.pop(0)
-                    test_mse_list.pop(0)
+                    train_acc_list.pop(0)
+                    test_acc_list.pop(0)
                 plot_train_axarr[0].cla()
                 plot_train_axarr[0].plot(iter_list, cost_list,
                     color='r', linewidth=2.0, label='Training cost')
                 plot_train_axarr[1].cla()
-                plot_train_axarr[1].plot(iter_list, train_mse_list,
-                    color='b', linewidth=2.0, label='Training MSE')
+                plot_train_axarr[1].plot(iter_list, train_acc_list,
+                    color='b', linewidth=2.0, label='Training ACC')
                 if(Xs is None or ys is None):
                     return
-                plot_train_axarr[1].plot(iter_list, test_mse_list,
-                    color='g', linewidth=2.0, label='Testing MSE')
+                plot_train_axarr[1].plot(iter_list, test_acc_list,
+                    color='g', linewidth=2.0, label='Testing ACC')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
@@ -328,11 +327,9 @@ class Classifier(object):
                 self.train_func(self.X, self.y, hyper)
             self.y_pred_lbls = self.y_nml.backward_transform(self.y_pred)
             self.TrACC = np.mean(self.y_pred_lbls==self.y_lbls)
-            self.TrNMSE = np.mean((self.y_pred-self.y)**2.)/np.var(self.y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
             self.message(self.NAME, " TrCost = %.4f"%(self.TrCost))
             self.message(self.NAME, "  TrACC = %.4f"%(self.TrACC))
-            self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xs is not None and ys is not None):
                 self.predict(Xs, ys)
             if(callback is not None):
@@ -342,12 +339,12 @@ class Classifier(object):
             if(plot_training):
                 iter_list.append(iter)
                 cost_list.append(self.TrCost)
-                train_mse_list.append(self.TrMSE)
-                test_mse_list.append(self.TsMSE)
+                train_acc_list.append(self.TrACC)
+                test_acc_list.append(self.TsACC)
                 plt.pause(0.01)
             if(plot_1d_function):
                 plt.pause(0.05)
-            return self.TrCost, self.TrNMSE, dhyper
+            return self.TrCost, 1-self.TrACC, dhyper
         if(plot_training):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d_function):
@@ -365,10 +362,8 @@ class Classifier(object):
             self.ys = self.y_nml.forward_transform(ys)
             self.ys_lbls = ys.copy()
             self.TsACC = np.mean(self.ys_pred_lbls==self.ys_lbls)
-            self.TsNMSE = np.mean((self.ys_pred-self.ys)**2.)/np.var(self.ys)
             self.SCORE = self.TsACC
             self.message(self.NAME, "  TsACC = %.4f"%(self.TsACC))
-            self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
             self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
         return self.ys_pred_lbls, self.ys_pred, self.ys_pred_std
 
@@ -377,11 +372,11 @@ class Classifier(object):
         prior_setting = (self.seed, self.R, self.M,
             self.use_inducing_inputs, self.use_optimized_phases,
             self.add_low_rank_freq, self.precompute_c_method)
-        train_data = (self.X, self.y)
+        train_data = (self.X, self.y, self.y_lbls)
         normalizers = (self.X_nml, self.y_nml)
         computed_matrices = (self.pre_c, self.hyper, self.EtawKiPhi, self.alpha)
-        performances = (self.TrCost, self.TrACC, self.TrNMSE, self.TrTime, 
-            self.TsACC, self.TsNMSE, self.SCORE)
+        performances = (self.TrCost, self.TrACC,
+            self.TrTime, self.TsACC, self.SCORE)
         save_pack = [prior_setting, train_data, normalizers,
             computed_matrices, performances]
         with open(path, "wb") as save_f:
@@ -395,14 +390,14 @@ class Classifier(object):
         self.use_inducing_inputs, self.use_optimized_phases = load_pack[0][3:5]
         self.add_low_rank_freq, self.precompute_c_method = load_pack[0][5:7]
         npr.seed(self.seed)
-        self.X, self.y = load_pack[1]
+        self.X, self.y, self.y_lbls = load_pack[1]
         self.N, self.D = self.X.shape
-        _, self.P = self.y.shape
+        self.P = self.y.shape[0]
         self.build_theano_model()
         self.X_nml, self.y_nml = load_pack[2]
         self.pre_c, self.hyper, self.EtawKiPhi, self.alpha = load_pack[3]
-        self.TrCost, self.TrACC, self.TrNMSE, self.TrTime = load_pack[4][:4]
-        self.TsACC, self.TsNMSE, self.SCORE = load_pack[4][4:7]
+        self.TrCost, self.TrACC, self.TrTime = load_pack[4][:3]
+        self.TsACC, self.SCORE = load_pack[4][3:]
 
 
 

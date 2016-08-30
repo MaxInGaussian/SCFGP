@@ -40,7 +40,6 @@ model_types = ["zph", "zf", "ph", "f"]
 num_models = len(model_types)
 metrics = {
     "ACC": ["Accuracy", [[] for _ in range(num_models)]],
-    "NMSE": ["Normalized Mean Square Error", [[] for _ in range(num_models)]],
     "TIME": ["Training Time", [[] for _ in range(num_models)]],
 }
 for M in Ms:
@@ -48,7 +47,6 @@ for M in Ms:
         funcs = None
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
-            X_train, y_train, X_test, y_test = load_mnist_data()
             model = Classifier(rank, M, fftype=fftype, msg=True)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
@@ -61,13 +59,10 @@ for M in Ms:
                 model.save("best_full_rank.pkl")
                 best_model = model
             results["ACC"].append(model.TsACC)
-            results["NMSE"].append(model.TsNMSE)
             results["TIME"].append(model.TrTime)
             print("\n>>>", model.NAME)
             print("    Model Selection Score\t\t\t= %.3f%s(Best %.4f)"%(
                 model_score, "  ", best_model_score))
-            print("    Normalized Mean Square Error \t= %.3f%s(Avg. %.4f)"%(
-                model.TsNMSE, "  ", best_model.TsNMSE))
             print("    Training Time\t\t\t\t\t= %.3f%s(Avg. %.4f)"%(
                 model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():

@@ -227,7 +227,7 @@ class Regressor(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05], 500, 8, 1e-4)
+            opt = Optimizer("smorms3", [0.05], 500, 8, 1e-4, [0.05])
             if(self.R != "full"):
                 opt.max_cvrg_iter /= 1+self.R/self.D
                 opt.cvrg_tol *= 1+self.R/self.D
