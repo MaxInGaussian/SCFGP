@@ -40,15 +40,15 @@ class Bernoulli(ExponentialFamily):
     def d2sigmoid(self, f):
         return d2logistic(f)
         
-    def theta(self, f);
+    def theta(self, f):
         return -T.log(1./self.sigmoid(f)-1)
     
-    def dtheta(self, f);
+    def dtheta(self, f):
         sigmoid_f = self.sigmoid(f)
         d_sigmoid_f = self.dsigmoid(f)
         return d_sigmoid_f/sigmoid_f/(1-sigmoid_f)
     
-    def d2theta(self, f);
+    def d2theta(self, f):
         sigmoid_f = self.sigmoid(f)
         d_sigmoid_f = self.dsigmoid(f)
         isig = 1./sigmoid_f/(1-sigmoid_f)
