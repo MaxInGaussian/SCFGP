@@ -1,6 +1,6 @@
 ################################################################################
-#  Sparsely Correlated Fourier Features Based Generalized Gaussian Process
-#  Author: Max W. Y. Lam (maxingaussian@gmail.com)
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
+#  Author: Max W. y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
 from __future__ import absolute_import
@@ -20,9 +20,9 @@ theano.config.mode = 'FAST_RUN'
 theano.config.optimizer = 'fast_run'
 theano.config.reoptimize_unpickled_function = False
 
-class Classifier(object):
+class GeneralizedPredictor(object):
     
-    " SCFGP as Classifier "
+    " SCFGP as GeneralizedPredictor "
 
     ID, NAME, seed, opt, msg, SCORE = "", "", None, None, True, 0
     use_inducing_inputs = True
@@ -30,11 +30,11 @@ class Classifier(object):
     add_low_rank_freq = True
     precompute_c_method = None
     R, M, N, D, P = -1, -1, -1, -1, -1
-    pre_c, X, y, y_lbls, Xs, ys, ys_pred, ys_pred_std, ys_pred_lbls = [None]*9
-    hyper, EtawKiPhi, alpha, train_func, pred_func = [None]*5
-    TrCost, TrACC, TsACC, TsSCORE = [np.inf]*4
+    pre_c, X, y, Xs, ys, hyper, Li, alpha, train_func, pred_func = [None]*10
+    TrCost, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [np.inf]*8
     
     def __init__(self,
+                 likelihood=None,
                  rank=-1,
                  feature_size=-1,
                  use_inducing_inputs=True,
@@ -43,6 +43,7 @@ class Classifier(object):
                  precompute_c_method=None,
                  fftype=None,
                  msg=True):
+        self.likelihood = likelihood
         self.R = rank
         self.M = feature_size
         if(fftype is None):
@@ -64,7 +65,7 @@ class Classifier(object):
         else:
             self.precompute_c_method = None
         self.X_nml = Normalizer("linear")
-        self.y_nml = Normalizer("categorize")
+        self.y_nml = Normalizer("standardize")
         self.msg = msg
         self.generate_ID()
     
@@ -85,109 +86,85 @@ class Classifier(object):
         npr.seed(self.seed)
     
     def build_theano_model(self):
-        _3Fx = (lambda F, x: T.concatenate([
-            F(x[i])[None, :, :] for i in range(self.P)], axis=0))
-        _3T = (lambda x: T.transpose(x, (0, 2, 1)))
-        _3dot = (lambda x, y: T.sum(x[:, :, :, None]*y[:, None, :, :], 2))
-        _3diag = (lambda x: _3Fx(T.diag, x))
-        _3diagonal = (lambda x: T.concatenate([
-            T.diag(x[i])[None, :] for i in range(self.P)], axis=0))
-        _3eye = (lambda A:_3diag(T.ones_like(A[:, :, 0])))
-        _3hstack = (lambda LIST: T.concatenate(LIST, axis=2))
-        _3chol = (lambda x: _3Fx(sT.cholesky, x))
-        _3inv = (lambda x: _3Fx(sT.matrix_inverse, x))
         self.message("Compiling SCFGP theano model...")
+        X, y, Xs, alpha, beta = T.dmatrices('X', 'y', 'Xs', 'alpha', 'beta')
+        N, P, S = X.shape[0], y.shape[1], Xs.shape[0]
         hyper = T.dvector('hyper')
-        X, Xs = T.dmatrices('X', 'Xs')
-        Y, EtawKiPhi, alpha = T.dtensor3s('Y', 'EtawKiPhi', 'alpha')
-        N, S, P = X.shape[0], Xs.shape[0], Y.shape[0]
-        tX, tXs = T.ones((self.P, 1, 1))*X, T.ones((self.P, 1, 1))*Xs
         t_ind = 0
-        b = T.reshape(hyper[t_ind:t_ind+self.P], (self.P, 1, 1))
-        t_ind += self.P
-        sig_f, sig2_f = T.exp(b), T.exp(2*b)
-        theta = T.reshape(hyper[t_ind:t_ind+self.P], (self.P, 1, 1))
-        t_ind += self.P
-        C = T.sum(T.exp(theta))
-        softmax = T.exp(theta)/C
-        u = Y-softmax
-        w = 1/(softmax*(1-softmax))
-        wi = 1/w
-        t = theta+w*u
+        a = hyper[t_ind:t_ind+1];t_ind+=1
+        sig_f = T.exp(a)
+        sig2_f = sig_f**2
+        m = T.reshape(hyper[t_ind:t_ind+self.N*self.P],
+            (self.N, self.P));t_ind+=self.N
+        w = T.reshape(hyper[t_ind:t_ind+self.N*self.P],
+            (self.N, self.P));t_ind+=self.N
         if(self.R == "full"):
-            Omega = T.reshape(hyper[t_ind:t_ind+self.D*self.M*self.P],
-                (self.P, self.D, self.M))
-            t_ind += self.D*self.M*self.P
+            Omega = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
+                (self.D, self.M));t_ind+=self.D*self.M
         else:
             if(self.precompute_c_method is None):
-                c = T.reshape(hyper[t_ind:t_ind+self.D*self.R*self.P],
-                    (self.P, self.D, self.R))
+                c = T.reshape(hyper[t_ind:t_ind+self.D*self.R],
+                    (self.D, self.R));t_ind+=self.D*self.R
             else:
-                c = theano.shared(self.pre_c)[None, :, :]+\
-                    T.reshape(hyper[t_ind:t_ind+self.D*self.R*self.P],
-                    (self.P, self.D, self.R))
-            t_ind += self.D*self.R*self.P
-            d = T.reshape(hyper[t_ind:t_ind+self.M*self.R*self.P],
-                (self.P, self.M, self.R));t_ind+=self.M*self.R*self.P
-            Omega = _3dot(c, _3T(d))
+                c = theano.shared(self.pre_c)+\
+                    T.reshape(hyper[t_ind:t_ind+self.D*self.R],
+                    (self.D, self.R));t_ind+=self.D*self.R
+            d = T.reshape(hyper[t_ind:t_ind+self.M*self.R],
+                (self.M, self.R));t_ind+=self.M*self.R
+            Omega = T.dot(c, d.T)
         if(self.use_inducing_inputs):
-            Z = T.reshape(hyper[t_ind:t_ind+self.D*self.M*self.P],
-                (self.P, self.D, self.M))[:, None, :, :]
-            t_ind += self.D*self.M*self.P
-            XOmega = T.sum((tX[:, :, :, None]-Z)*Omega[:, None, :, :], 2)
-            XsOmega = T.sum((tXs[:, :, :, None]-Z)*Omega[:, None, :, :], 2)
+            Z = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
+                (self.D, self.M))[None, :, :];t_ind+=self.D*self.M
+            XOmega = T.sum((X[:, :, None]-Z)*Omega[None, :, :], 1)
+            XsOmega = T.sum((Xs[:, :, None]-Z)*Omega[None, :, :], 1)
         else:
-            XOmega, XsOmega = _3dot(tX, Omega), _3dot(tXs, Omega)
+            XOmega, XsOmega = T.dot(X, Omega), T.dot(Xs, Omega)
         if(self.use_optimized_phases):
-            ph = T.reshape(hyper[t_ind:t_ind+2*self.M*self.P],
-                (self.P, 1, 2*self.M))
-            t_ind += self.M*2
-            cosXOmega = T.cos(XOmega+T.tile(ph[:, :, :self.M], (1, N, 1)))
-            cosXsOmega = T.cos(XsOmega+T.tile(ph[:, :, :self.M], (1, S, 1)))
-            sinXOmega = T.sin(XOmega+T.tile(ph[:, :, self.M:], (1, N, 1)))
-            sinXsOmega = T.sin(XsOmega+T.tile(ph[:, :, self.M:], (1, S, 1)))
+            ph = hyper[t_ind:t_ind+self.M*2];t_ind+=self.M*2
+            cosXOmega = T.cos(XOmega+T.tile(ph[None, :self.M], (N, 1)))
+            cosXsOmega = T.cos(XsOmega+T.tile(ph[None, :self.M], (S, 1)))
+            sinXOmega = T.sin(XOmega+T.tile(ph[None, self.M:], (N, 1)))
+            sinXsOmega = T.sin(XsOmega+T.tile(ph[None, self.M:], (S, 1)))
         else:
             sinXOmega, sinXsOmega = T.sin(XOmega), T.sin(XsOmega)
             cosXOmega, cosXsOmega = T.cos(XOmega), T.cos(XsOmega)
         const = sig_f*T.sqrt(2./self.M)
         Fourier_features_list = [[sinXOmega, cosXOmega], [sinXsOmega, cosXsOmega]]
         if(self.add_low_rank_freq):
-            Xc, Xsc = _3dot(tX, c), _3dot(tXs, c)
+            Xc, Xsc = X.dot(c), Xs.dot(c)
             sinXc, sinXsc = T.sin(Xc), T.sin(Xsc)
             cosXc, cosXsc = T.cos(Xc), T.cos(Xsc)
             Fourier_features_list[0].extend([sinXc, cosXc])
             Fourier_features_list[1].extend([sinXsc, cosXsc])
-        Phi = const*_3hstack(Fourier_features_list[0])
-        Phis = const*_3hstack(Fourier_features_list[1])
-        Eta = _3T(wi*Phi)
-        Gamma = _3dot(Eta, Phi)
-        A = Gamma+_3eye(Gamma)
-        L = _3chol(A)
-        Li = _3inv(L)
-        LiEta = _3dot(Li, Eta)
-        wKi = _3eye(tX)-_3dot(Phi, _3dot(_3T(Li), LiEta))
-        EtawKi = _3dot(Eta, wKi)
-        EtawKiPhi_ = _3dot(EtawKi, Phi)
-        alpha_ = _3dot(EtawKi, t)
-        y_pred = _3dot(Phi, alpha_)
-        mu_omega = T.mean(T.mean(Omega, axis=0), axis=1)
-        sigma_omega = T.std(T.mean(Omega, axis=0), axis=1)
-        NLML = 1./2*_3dot(_3dot(_3T(t), wi*wKi), t).sum()+\
-            T.log(_3diagonal(L)).sum()-\
-            1./2*(sigma_omega+mu_omega**2-T.log(sigma_omega)-1).sum()
-        cost = NLML/N
+        Phi = const*T.concatenate(Fourier_features_list[0], 1)
+        Phis = const*T.concatenate(Fourier_features_list[1], 1)
+        EPhi = w*Phi
+        Gamma = T.dot(Phi.T, EPhi)
+        A = Gamma+T.identity_like(Gamma)
+        L = sT.cholesky(A)
+        Li = sT.matrix_inverse(L)
+        B = T.dot(Li, EPhi.T)
+        I_BTBW = T.eye(self.N)-T.dot(B.T, (B/w.T))
+        alpha_ = T.dot(Phi.T, m)
+        beta_ = T.dot(Phi.T, T.dot(I_BTBW, Phi))
+        mu_f = T.dot(Phi, alpha_)
+        var_f = T.dot(Phi, T.dot(Phi.T, I_BTBW))
+        EIAtheataI = self.likelihood.EIAtheataI(mu_f, var_f)
+        EItheataI = self.likelihood.EItheataI(mu_f, var_f)
+        TIyI = self.likelihood.TIyI(y)
+        cost = T.sum(EIAtheataI-TIyI*EItheataI)+T.sum(T.log(T.diagonal(L)))+\
+            T.trace(I_BTBW)-1./2*T.sum(T.dot(alpha_.T, alpha_))
         dhyper = T.grad(cost, hyper)
-        train_input = [X, Y, hyper]
-        train_input_name = ['X', 'Y', 'hyper']
-        train_output = [EtawKiPhi_, alpha_, y_pred, cost, dhyper]
-        train_output_name = ['EtawKiPhi', 'alpha', 'y_pred', 'cost', 'dhyper']
+        train_input = [X, y, hyper]
+        train_input_name = ['X', 'y', 'hyper']
+        train_output = [alpha_, beta_, y_pred, cost, dhyper]
+        train_output_name = ['alpha', 'beta', 'y_pred', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
-        ys_pred = _3dot(Phis, alpha)
-        prod = _3T(Phis)-_3dot(EtawKiPhi, _3T(Phis))
-        ys_pred_std = T.sqrt(_3diagonal(_3dot(Phis, prod)))
-        pred_input = [Xs, hyper, EtawKiPhi, alpha]
-        pred_input_name = ['Xs', 'hyper', 'EtawKiPhi', 'alpha']
+        ys_pred = T.dot(Phis, alpha)
+        ys_pred_std = T.dot(Phis, T.dot(T.identity_like(beta)-beta, Phis.T))
+        pred_input = [Xs, hyper, alpha, beta]
+        pred_input_name = ['Xs', 'hyper', 'alpha', 'beta']
         pred_output = [ys_pred, ys_pred_std]
         pred_output_name = ['ys_pred', 'ys_pred_std']
         self.pred_func = theano.function(
@@ -195,44 +172,44 @@ class Classifier(object):
         self.message("done.")
 
     def init_model(self):
-        b = np.array([-2*np.log(4.)]*self.P)
+        a = -2*np.log(4.)
         best_hyper, min_cost = None, np.inf
-        for _ in range(20):
-            theta = np.random.randn(self.P)
-            hyper_list = [b.ravel(), theta.ravel()]
+        for _ in range(50):
+            m = np.random.randn(self.N, self.P)
+            g = np.random.randn(self.N, self.P)**2.
+            hyper_list = [np.array(a), m, g]
             if(self.R == "full"):
-                Omega = np.random.randn(self.P, self.D, self.M)
+                Omega = np.random.randn(self.D, self.M)
                 hyper_list.append(Omega.ravel())
             else:
-                c = np.random.rand(self.P, self.D, self.R)
-                d = np.random.randn(self.P, self.M, self.R)
+                c = np.random.rand(self.D, self.R)
+                d = np.random.randn(self.M, self.R)
                 hyper_list.extend([c.ravel(), d.ravel()])
             cost = 0
             if(self.use_inducing_inputs):
-                Z = np.random.randn(self.P, self.D, self.M)
+                Z = np.random.randn(self.D, self.M)
                 hyper_list.append(Z.ravel())
             if(self.use_optimized_phases):
-                ph = np.random.rand(self.P, self.M*2)*2*np.pi
+                ph = np.random.rand(self.M*2)*2*np.pi
                 hyper_list.append(ph.ravel())
             hyper = np.concatenate(hyper_list)
-            EtawKiPhi, alpha, y_pred, cost, _ = self.train_func(self.X, self.y, hyper)
+            Li, alpha, y_pred, cost, _ = self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
         self.hyper = best_hyper.copy()
-        self.EtawKiPhi, self.alpha, self.y_pred, self.cost, _ = self.train_func(
+        self.Li, self.alpha, self.y_pred, self.cost, _ = self.train_func(
             self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
         plot_training=False, plot_1d_function=False):
-        self.y_lbls = y.copy()
         self.X_nml.fit(X)
         self.y_nml.fit(y)
         self.X = self.X_nml.forward_transform(X)
         self.y = self.y_nml.forward_transform(y)
         self.N, self.D = self.X.shape
-        self.P = self.y.shape[0]
+        _, self.P = self.y.shape
         if(self.R != "full"):
             if(self.precompute_c_method is not None):
                 if(self.R > self.D):
@@ -259,7 +236,7 @@ class Classifier(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05], 500, 10, 1./self.N)
+            opt = Optimizer("smorms3", [0.05], 500, 8, 1e-4, [0.05])
             if(self.R != "full"):
                 opt.max_cvrg_iter /= 1+self.R/self.D
                 opt.cvrg_tol *= 1+self.R/self.D
@@ -267,8 +244,8 @@ class Classifier(object):
         if(plot_training):
             iter_list = []
             cost_list = []
-            train_acc_list = []
-            test_acc_list = []
+            train_mse_list = []
+            test_mse_list = []
             plot_train_fig, plot_train_axarr = plt.subplots(
                 2, figsize=(8, 6), facecolor='white', dpi=120)
             plot_train_fig.suptitle(self.NAME, fontsize=15)
@@ -282,18 +259,18 @@ class Classifier(object):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
                     cost_list.pop(0)
-                    train_acc_list.pop(0)
-                    test_acc_list.pop(0)
+                    train_mse_list.pop(0)
+                    test_mse_list.pop(0)
                 plot_train_axarr[0].cla()
                 plot_train_axarr[0].plot(iter_list, cost_list,
                     color='r', linewidth=2.0, label='Training cost')
                 plot_train_axarr[1].cla()
-                plot_train_axarr[1].plot(iter_list, train_acc_list,
-                    color='b', linewidth=2.0, label='Training ACC')
+                plot_train_axarr[1].plot(iter_list, train_mse_list,
+                    color='b', linewidth=2.0, label='Training MSE')
                 if(Xs is None or ys is None):
                     return
-                plot_train_axarr[1].plot(iter_list, test_acc_list,
-                    color='g', linewidth=2.0, label='Testing ACC')
+                plot_train_axarr[1].plot(iter_list, test_mse_list,
+                    color='g', linewidth=2.0, label='Testing MSE')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
@@ -306,7 +283,7 @@ class Classifier(object):
                 errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
                 Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
                 mu, std = self.pred_func(
-                    Xplot, self.hyper, self.EtawKiPhi, self.alpha)
+                    Xplot, self.hyper, self.Li, self.alpha)
                 mu = mu.ravel()
                 std = std.ravel()
                 for er in errors:
@@ -323,13 +300,15 @@ class Classifier(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.EtawKiPhi, self.alpha, self.y_pred, self.TrCost, dhyper =\
+            self.Li, self.alpha, y_pred, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
-            self.y_pred_lbls = self.y_nml.backward_transform(self.y_pred)
-            self.TrACC = np.mean(self.y_pred_lbls==self.y_lbls)
+            self.y_pred = self.y_nml.backward_transform(y_pred)
+            self.TrMSE = np.mean((self.y_pred-y)**2.)
+            self.TrNMSE = self.TrMSE/np.var(y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
             self.message(self.NAME, " TrCost = %.4f"%(self.TrCost))
-            self.message(self.NAME, "  TrACC = %.4f"%(self.TrACC))
+            self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
+            self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xs is not None and ys is not None):
                 self.predict(Xs, ys)
             if(callback is not None):
@@ -339,12 +318,12 @@ class Classifier(object):
             if(plot_training):
                 iter_list.append(iter)
                 cost_list.append(self.TrCost)
-                train_acc_list.append(self.TrACC)
-                test_acc_list.append(self.TsACC)
+                train_mse_list.append(self.TrMSE)
+                test_mse_list.append(self.TsMSE)
                 plt.pause(0.01)
             if(plot_1d_function):
                 plt.pause(0.05)
-            return self.TrCost, 1-self.TrACC, dhyper
+            return self.TrCost, self.TrNMSE, dhyper
         if(plot_training):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d_function):
@@ -355,28 +334,39 @@ class Classifier(object):
 
     def predict(self, Xs, ys=None):
         self.Xs = self.X_nml.forward_transform(Xs)
-        self.ys_pred, self.ys_pred_std = self.pred_func(
-            self.Xs, self.hyper, self.EtawKiPhi, self.alpha)
-        self.ys_pred_lbls = self.y_nml.backward_transform(self.ys_pred)
+        ys_pred, ys_pred_std = self.pred_func(
+            self.Xs, self.hyper, self.Li, self.alpha)
+        self.ys_pred = self.y_nml.backward_transform(ys_pred)
+        self.ys_pred_std = np.tile(ys_pred_std[:, None],
+            (self.P,))*self.y_nml.data["std"][None, :]
         if(ys is not None):
             self.ys = self.y_nml.forward_transform(ys)
-            self.ys_lbls = ys.copy()
-            self.TsACC = np.mean(self.ys_pred_lbls==self.ys_lbls)
-            self.SCORE = self.TsACC
-            self.message(self.NAME, "  TsACC = %.4f"%(self.TsACC))
+            self.TsMAE = np.mean(np.abs(self.ys_pred-ys))
+            self.TsMSE = np.mean((self.ys_pred-ys)**2.)
+            self.TsRMSE = np.sqrt(np.mean((self.ys_pred-ys)**2.))
+            self.TsNMSE = self.TsMSE/np.var(ys)
+            self.TsMNLP = 0.5*np.log(2*np.pi)+0.5*np.mean(((ys-self.ys_pred)/\
+                self.ys_pred_std)**2+np.log(self.ys_pred_std**2))
+            self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
+            self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
+            self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
+            self.message(self.NAME, " TsRMSE = %.4f"%(self.TsRMSE))
+            self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
+            self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
             self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
-        return self.ys_pred_lbls, self.ys_pred, self.ys_pred_std
+        return self.ys_pred, self.ys_pred_std
 
     def save(self, path):
         import pickle
         prior_setting = (self.seed, self.R, self.M,
             self.use_inducing_inputs, self.use_optimized_phases,
             self.add_low_rank_freq, self.precompute_c_method)
-        train_data = (self.X, self.y, self.y_lbls)
+        train_data = (self.X, self.y)
         normalizers = (self.X_nml, self.y_nml)
-        computed_matrices = (self.pre_c, self.hyper, self.EtawKiPhi, self.alpha)
-        performances = (self.TrCost, self.TrACC,
-            self.TrTime, self.TsACC, self.SCORE)
+        computed_matrices = (self.pre_c, self.hyper, self.Li, self.alpha)
+        performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime, 
+            self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE,
+                self.TsMNLP, self.SCORE)
         save_pack = [prior_setting, train_data, normalizers,
             computed_matrices, performances]
         with open(path, "wb") as save_f:
@@ -390,14 +380,15 @@ class Classifier(object):
         self.use_inducing_inputs, self.use_optimized_phases = load_pack[0][3:5]
         self.add_low_rank_freq, self.precompute_c_method = load_pack[0][5:7]
         npr.seed(self.seed)
-        self.X, self.y, self.y_lbls = load_pack[1]
+        self.X, self.y = load_pack[1]
         self.N, self.D = self.X.shape
-        self.P = self.y.shape[0]
+        _, self.P = self.y.shape
         self.build_theano_model()
         self.X_nml, self.y_nml = load_pack[2]
-        self.pre_c, self.hyper, self.EtawKiPhi, self.alpha = load_pack[3]
-        self.TrCost, self.TrACC, self.TrTime = load_pack[4][:3]
-        self.TsACC, self.SCORE = load_pack[4][3:]
+        self.pre_c, self.hyper, self.Li, self.alpha = load_pack[3]
+        self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime = load_pack[4][:4]
+        self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][4:7]
+        self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][7:]
 
 
 
