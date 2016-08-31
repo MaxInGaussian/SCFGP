@@ -1,3 +1,6 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
 from SCFGP import GeneralizedPredictor, Gaussian
 
 def load_boston_data(proportion=106./506):
@@ -16,5 +19,5 @@ X_train, y_train, X_test, y_test = load_boston_data()
 likelihood = Gaussian()
 rank = "full"
 M = 30
-model = Regressor(likelihood, rank, M, fftype=fftype, msg=False)
+model = GeneralizedPredictor(likelihood, rank, M, msg=True)
 model.fit(X_train, y_train, X_test, y_test)

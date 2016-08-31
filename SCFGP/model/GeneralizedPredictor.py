@@ -49,7 +49,7 @@ class GeneralizedPredictor(object):
         if(fftype is None):
             self.use_inducing_inputs = use_inducing_inputs
             self.use_optimized_phases = use_optimized_phases
-            self.add_low_rank_freq = add_low_rank_freq
+            self.add_low_rank_freq = True if rank != "full" else False
         else:
             self.use_inducing_inputs = False
             self.use_optimized_phases = False
@@ -74,6 +74,9 @@ class GeneralizedPredictor(object):
             print(" ".join(map(str, arg)))
             sys.stdout.flush()
     
+    def print_val(self, val, msg):
+        return theano.printing.Print(msg)(val)
+    
     def generate_ID(self):
         self.ID = ''.join(
             chr(np.random.choice([ord(c) for c in (
@@ -91,13 +94,12 @@ class GeneralizedPredictor(object):
         N, P, S = X.shape[0], y.shape[1], Xs.shape[0]
         hyper = T.dvector('hyper')
         t_ind = 0
-        a = hyper[t_ind:t_ind+1];t_ind+=1
+        a = hyper[0];t_ind+=1
         sig_f = T.exp(a)
         sig2_f = sig_f**2
-        m = T.reshape(hyper[t_ind:t_ind+self.N*self.P],
-            (self.N, self.P));t_ind+=self.N
-        w = T.reshape(hyper[t_ind:t_ind+self.N*self.P],
-            (self.N, self.P));t_ind+=self.N
+        d = hyper[1];t_ind+=1
+        g = T.reshape(hyper[t_ind:t_ind+self.M*2],
+            (self.M*2, 1));t_ind+=self.M*2
         if(self.R == "full"):
             Omega = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
                 (self.D, self.M));t_ind+=self.D*self.M
@@ -138,31 +140,34 @@ class GeneralizedPredictor(object):
             Fourier_features_list[1].extend([sinXsc, cosXsc])
         Phi = const*T.concatenate(Fourier_features_list[0], 1)
         Phis = const*T.concatenate(Fourier_features_list[1], 1)
-        EPhi = w*Phi
+        m_hat = T.dot(Phi, g)
+        w_opt = -2*self.likelihood.df_dv_optimal(m_hat, y, d)
+        w_opt = self.print_val(w_opt, "w_opt:")
+        EPhi = w_opt*Phi
         Gamma = T.dot(Phi.T, EPhi)
-        A = Gamma+T.identity_like(Gamma)
+        I_M = T.identity_like(Gamma)
+        A = Gamma+I_M
         L = sT.cholesky(A)
         Li = sT.matrix_inverse(L)
         B = T.dot(Li, EPhi.T)
-        I_BTBW = T.eye(self.N)-T.dot(B.T, (B/w.T))
-        alpha_ = T.dot(Phi.T, m)
-        beta_ = T.dot(Phi.T, T.dot(I_BTBW, Phi))
-        mu_f = T.dot(Phi, alpha_)
-        var_f = T.dot(Phi, T.dot(Phi.T, I_BTBW))
-        EIAtheataI = self.likelihood.EIAtheataI(mu_f, var_f)
-        EItheataI = self.likelihood.EItheataI(mu_f, var_f)
-        TIyI = self.likelihood.TIyI(y)
-        cost = T.sum(EIAtheataI-TIyI*EItheataI)+T.sum(T.log(T.diagonal(L)))+\
-            T.trace(I_BTBW)-1./2*T.sum(T.dot(alpha_.T, alpha_))
+        I_BTBW = T.eye(self.N)-T.dot(B.T, (1./w_opt).T*B)
+        beta_ = I_M-T.dot(Phi.T, T.dot(I_BTBW, Phi))
+        v_f = T.diagonal(T.dot(Phi, T.dot(beta_, Phi.T)))[:, None]
+        g_opt = self.likelihood.df_dm_optimal(m_hat, v_f, y, d)
+        alpha_ = T.dot(Phi.T, g_opt)
+        m_f = T.dot(Phi, alpha_)
+        fIm_v_y_dI = self.likelihood.fIm_v_y_dI(m_f, v_f, y, d)
+        cost = T.sum(fIm_v_y_dI)+T.sum(T.log(T.diagonal(L)))+\
+            1./2*T.sum(T.diagonal(I_BTBW))-1./2*T.sum(T.dot(alpha_.T, alpha_))
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [alpha_, beta_, y_pred, cost, dhyper]
-        train_output_name = ['alpha', 'beta', 'y_pred', 'cost', 'dhyper']
+        train_output = [alpha_, beta_, m_f, cost, dhyper]
+        train_output_name = ['alpha', 'beta', 'm_f', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
         ys_pred = T.dot(Phis, alpha)
-        ys_pred_std = T.dot(Phis, T.dot(T.identity_like(beta)-beta, Phis.T))
+        ys_pred_std = T.sqrt(T.diagonal(T.dot(Phis, T.dot(beta, Phis.T))))
         pred_input = [Xs, hyper, alpha, beta]
         pred_input_name = ['Xs', 'hyper', 'alpha', 'beta']
         pred_output = [ys_pred, ys_pred_std]
@@ -172,12 +177,11 @@ class GeneralizedPredictor(object):
         self.message("done.")
 
     def init_model(self):
-        a = -2*np.log(4.)
+        a, d = -2*np.log(4.), 1
         best_hyper, min_cost = None, np.inf
         for _ in range(50):
-            m = np.random.randn(self.N, self.P)
-            g = np.random.randn(self.N, self.P)**2.
-            hyper_list = [np.array(a), m, g]
+            g = np.random.randn(self.M*2, self.P)
+            hyper_list = [np.array([a, d]), g.ravel()]
             if(self.R == "full"):
                 Omega = np.random.randn(self.D, self.M)
                 hyper_list.append(Omega.ravel())
@@ -192,14 +196,15 @@ class GeneralizedPredictor(object):
             if(self.use_optimized_phases):
                 ph = np.random.rand(self.M*2)*2*np.pi
                 hyper_list.append(ph.ravel())
-            hyper = np.concatenate(hyper_list)
-            Li, alpha, y_pred, cost, _ = self.train_func(self.X, self.y, hyper)
+            self.hyper = np.concatenate(hyper_list)
+            alpha, beta, y_pred, cost, _ = self.train_func(
+                self.X, self.y, self.hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
-                best_hyper = hyper.copy()
+                best_hyper = self.hyper.copy()
         self.hyper = best_hyper.copy()
-        self.Li, self.alpha, self.y_pred, self.cost, _ = self.train_func(
+        self.alpha, self.beta, self.y_pred, self.cost, _ = self.train_func(
             self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
@@ -236,7 +241,7 @@ class GeneralizedPredictor(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05], 500, 8, 1e-4, [0.05])
+            opt = Optimizer("smorms3", [0.05], 500, 8, 1e-4, False)
             if(self.R != "full"):
                 opt.max_cvrg_iter /= 1+self.R/self.D
                 opt.cvrg_tol *= 1+self.R/self.D
@@ -300,7 +305,7 @@ class GeneralizedPredictor(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.Li, self.alpha, y_pred, self.TrCost, dhyper =\
+            self.alpha, self.beta, y_pred, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.y_pred = self.y_nml.backward_transform(y_pred)
             self.TrMSE = np.mean((self.y_pred-y)**2.)
@@ -335,7 +340,7 @@ class GeneralizedPredictor(object):
     def predict(self, Xs, ys=None):
         self.Xs = self.X_nml.forward_transform(Xs)
         ys_pred, ys_pred_std = self.pred_func(
-            self.Xs, self.hyper, self.Li, self.alpha)
+            self.Xs, self.hyper, self.alpha, self.beta)
         self.ys_pred = self.y_nml.backward_transform(ys_pred)
         self.ys_pred_std = np.tile(ys_pred_std[:, None],
             (self.P,))*self.y_nml.data["std"][None, :]

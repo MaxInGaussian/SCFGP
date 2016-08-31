@@ -5,16 +5,15 @@
 
 from __future__ import absolute_import
 
-import theano;
+import numpy as np
 import theano.tensor as T;
-import theano.sandbox.linalg as sT
 
 from SCFGP.likelihood import ExponentialFamily
 
 class Bernoulli(ExponentialFamily):
     
     def __init__(self):
-        super(Bernoulli).__init__("Bernoulli")
+        super().__init__("Bernoulli")
     
     def TIyI(self, y):
         return y
