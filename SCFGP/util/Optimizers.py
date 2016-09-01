@@ -40,7 +40,7 @@ class Optimizer(object):
             self.ln_params = [0.05, 0.9]
         x = x0.copy()
         step_size, m = self.ln_params
-        last_f, f, min_e, e = None, None, np.Infinity, None
+        last_e, f, min_e, e = None, None, np.Infinity, None
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         v = np.zeros_like(x)
         adjust_step = True
@@ -48,12 +48,10 @@ class Optimizer(object):
             f, e, g = train(i+1, x)
             if(not self.stop_by_train_error):
                 e = f
-            if(adjust_step and e > 0 and min_e > 0):
-                if(min_e < e):
-                    step_size *= max(0.9, (min_e/e)**0.2)
-                else:
-                    step_size *= min(1.2, (min_e/e)**0.3)
-            last_f = f
+            if(adjust_step and last_e is not None and e > 0 and last_e > 0):
+                step_size *= max(0.8, min(1.2, (
+                    1+last_e-e-10*self.cvrg_tol)**(50/(i+1))))
+            last_e = e
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
@@ -82,7 +80,7 @@ class Optimizer(object):
             self.ln_params = [0.05, 0.9]
         x = x0.copy()
         step_size, gamma = self.ln_params
-        last_f, f, min_e, e = None, None, np.Infinity, None
+        last_e, f, min_e, e = None, None, np.Infinity, None
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         avg_sq_grad = np.zeros_like(x)
         adjust_step = True
@@ -90,12 +88,10 @@ class Optimizer(object):
             f, e, g = train(i+1, x)
             if(not self.stop_by_train_error):
                 e = f
-            if(adjust_step and e > 0 and min_e > 0):
-                if(min_e < e):
-                    step_size *= max(0.9, (min_e/e)**0.2)
-                else:
-                    step_size *= min(1.2, (min_e/e)**0.3)
-            last_f = f
+            if(adjust_step and last_e is not None and e > 0 and last_e > 0):
+                step_size *= max(0.8, min(1.2, (
+                    1+last_e-e-10*self.cvrg_tol)**(50/(i+1))))
+            last_e = e
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
@@ -124,7 +120,7 @@ class Optimizer(object):
             self.ln_params = [0.05, 0.9, 0.999]
         x = x0.copy()
         step_size, b1, b2 = self.ln_params
-        last_f, f, min_e, e = None, None, np.Infinity, None
+        last_e, f, min_e, e = None, None, np.Infinity, None
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         m = np.zeros_like(x)
         v = np.zeros_like(x)
@@ -133,12 +129,10 @@ class Optimizer(object):
             f, e, g = train(i+1, x)
             if(not self.stop_by_train_error):
                 e = f
-            if(adjust_step and e > 0 and min_e > 0):
-                if(min_e < e):
-                    step_size *= max(0.9, (min_e/e)**0.2)
-                else:
-                    step_size *= min(1.2, (min_e/e)**0.3)
-            last_f = f
+            if(adjust_step and last_e is not None and e > 0 and last_e > 0):
+                step_size *= max(0.8, min(1.2, (
+                    1+last_e-e-10*self.cvrg_tol)**(50/(i+1))))
+            last_e = e
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
@@ -170,7 +164,7 @@ class Optimizer(object):
             self.ln_params = [0.05]
         x = x0.copy()
         step_size = self.ln_params[0]
-        last_f, f, min_e, e = None, None, np.Infinity, None
+        f, last_e, min_e, e = None, None, np.Infinity, None
         min_f, argmin_x, cvrg_iter = np.Infinity, None, 0
         x = x0.copy()
         m = np.ones_like(x0)
@@ -181,12 +175,10 @@ class Optimizer(object):
             f, e, g = train(i+1, x)
             if(not self.stop_by_train_error):
                 e = f
-            if(adjust_step and e > 0 and min_e > 0):
-                if(min_e < e):
-                    step_size *= max(0.9, (min_e/e)**0.2)
-                else:
-                    step_size *= min(1.2, (min_e/e)**0.3)
-            last_f = f
+            if(adjust_step and last_e is not None and e > 0 and last_e > 0):
+                step_size *= max(0.8, min(1.2, (
+                    1+last_e-e-10*self.cvrg_tol)**(50/(i+1))))
+            last_e = e
             if(e < min_e):
                 if(min_e-e < self.cvrg_tol):
                     cvrg_iter += 1
