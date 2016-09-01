@@ -60,9 +60,10 @@ class SCFGP(object):
                 self.use_optimized_phases = True
             if(rank != "full"):
                 self.add_low_rank_freq = True
-        if(self.R != "full"):
+        if(rank != "full"):
             self.precompute_c_method = precompute_c_method
         else:
+            self.add_low_rank_freq = False
             self.precompute_c_method = None
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")

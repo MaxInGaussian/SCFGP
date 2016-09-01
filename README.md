@@ -50,57 +50,53 @@ To install scikit-learn, see this page:
 # Use SCFGP for Regression
 ```python
 from SCFGP import *
-model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<feature type>)
-model.fit(X_train, y_train, X_test, y_test)
+model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype={feature type}, msg={print message or not})
+model.fit(X_train, y_train, {X_test}, {y_test})
+# <>: necessary inputs, {}: optional inputs
 ```
 ## Predict Boston Housing Prices
+```python
+In [1]: X_train.shape, y_train.shape, X_test.shape, y_test.shape
+Out[1]: ((400, 13), (400, 1), (106, 13), (106, 1))
+```
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
 ![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
 ![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
 ![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
 ![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
-## Predict Age Of Abalone
+## Predict Age of Abalone
+```python
+In [2]: X_train.shape, y_train.shape, X_test.shape, y_test.shape
+Out[2]: ((3133, 10), (3133, 1), (1044, 10), (1044, 1))
+```
 ![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
 ![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
 ![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
 ![AbaloneNMSE](experiments/abalone/full_rank_plots/nmse.png?raw=true "Abalone NMSE")
 ![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
 ![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
-## Predict Kinematics Of An 8-link Robot Arm
+## Predict Kinematics of 8-link Robot Arm
+```python
+In [3]: X_train.shape, y_train.shape, X_test.shape, y_test.shape
+Out[3]: ((5000, 8), (5000, 1), (3192, 8), (3192, 1))
+```
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
 ![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
 ![Kin8nmNMSE](experiments/kin8nm/low_rank_plots/nmse.png?raw=true "Kin8nm NMSE")
 ![Kin8nmMNLP](experiments/kin8nm/low_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
 ![Kin8nmTime](experiments/kin8nm/low_rank_plots/time.png?raw=true "Kin8nm Time")
-#Use SCFGP for Supervised Dimensionality Reduction
-```python
-from SCFGP import SCFGP
-model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<feature type>)
-model.fit(X_train, y_train, X_test, y_test)
-```
-## Visualize MNIST
-### Feature Type 1: Fourier (sine & cosine)
-![MNIST-F-10](experiments/mnist/visualize_mnist_f_10.png?raw=true "MNIST F 10")
-![MNIST-F-30](experiments/mnist/visualize_mnist_f_30.png?raw=true "MNIST F 30")
-![MNIST-F-50](experiments/mnist/visualize_mnist_f_50.png?raw=true "MNIST F 50")
-### Feature Type 2: Fourier (sine & cosine) + Inducing Frequencies
-![MNIST-FZ-10](experiments/mnist/visualize_mnist_fz_10.png?raw=true "MNIST FZ 10")
-![MNIST-FZ-30](experiments/mnist/visualize_mnist_fz_30.png?raw=true "MNIST FZ 30")
-![MNIST-FZ-50](experiments/mnist/visualize_mnist_fz_50.png?raw=true "MNIST FZ 50")
-### Feature Type 3: Cosine with Adjustable Phases (only cosine)
-![MNIST-PH-10](experiments/mnist/visualize_mnist_ph_10.png?raw=true "MNIST PH 10")
-![MNIST-PH-30](experiments/mnist/visualize_mnist_ph_30.png?raw=true "MNIST PH 30")
-![MNIST-PH-50](experiments/mnist/visualize_mnist_ph_50.png?raw=true "MNIST PH 50")
-### Feature Type 4: Cosine with Adjustable Phases (only cosine) + Inducing Frequencies
-![MNIST-PHZ-10](experiments/mnist/visualize_mnist_phz_10.png?raw=true "MNIST PHZ 10")
-![MNIST-PHZ-30](experiments/mnist/visualize_mnist_phz_30.png?raw=true "MNIST PHZ 30")
-![MNIST-PHZ-50](experiments/mnist/visualize_mnist_phz_50.png?raw=true "MNIST PHZ 50")
 <h3 align="center">
-"The similariy of high-dimensional features over different classes are preserved!"
+"Training time becomes less sensitive to the sample size, sensitive to the number of Fourier feature"
 </h3>
-
+## Examine the Efficacy of Training Process on Real-Time
+```python
+model.fit(X_train, y_train, {X_test}, {y_test}, plot_training=True)
+# <>: necessary inputs, {}: optional inputs
+```
+# Training on High-dimensional Data (Boston Housing Prices)
+![BostonHousingPlotTraining](experiments/boston_housing/plot_training.gif?raw=true "Boston Housing Plot Training")
 #License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.
