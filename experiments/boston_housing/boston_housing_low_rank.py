@@ -71,19 +71,19 @@ for M in Ms:
             results["MNLP"].append(model.TsMNLP)
             results["TIME"].append(model.TrTime)
             print("\n>>>", model.NAME)
-            print("    Model Selection Score\t\t\t= %.3f%s(Best %.4f)"%(
+            print("    Model Selection Score\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model_score, "  ", best_model_score))
-            print("    Mean Absolute Error\t\t\t\t= %.3f%s(Best %.4f)"%(
+            print("    Mean Absolute Error\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsMAE, "  ", best_model.TsMAE))
-            print("    Mean Square Error\t\t\t\t= %.3f%s(Best %.4f)"%(
+            print("    Mean Square Error\t\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsMSE, "  ", best_model.TsMSE))
-            print("    Root Mean Square Error\t\t\t= %.3f%s(Best %.4f)"%(
+            print("    Root Mean Square Error\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsRMSE, "  ", best_model.TsRMSE))
-            print("    Normalized Mean Square Error \t= %.3f%s(Best %.4f)"%(
+            print("    Normalized Mean Square Error \t= %.4f%s(Best %.4f)"%(
                 model.TsNMSE, "  ", best_model.TsNMSE))
-            print("    Mean Negative Log Probability\t= %.3f%s(Best %.4f)"%(
+            print("    Mean Negative Log Probability\t= %.4f%s(Best %.4f)"%(
                 model.TsMNLP, "  ", best_model.TsMNLP))
-            print("    Training Time\t\t\t\t\t= %.3f%s(Best %.4f)"%(
+            print("    Training Time\t\t\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))
