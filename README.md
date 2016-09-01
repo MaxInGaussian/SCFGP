@@ -59,14 +59,16 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 # Performance on Benchmark Regression Datasets
 | Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
 | :---: | :---: | :---: | :---: |
-| bostion Housing | 13 | 400 | 106 |
-| abalone | 10 | 3133 | 1044 |
-| kin8nm | 10 | 5000 | 3192 |
+| Bostion Housing | 13 | 400 | 106 |
+| Abalone | 10 | 3133 | 1044 |
+| Kin8nm | 10 | 5000 | 3192 |
+# Performance of SCFGP with Different Size and Types of Fourier Features
 ## Predict Boston Housing Prices
-```python
->>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
-((400, 13), (400, 1), (106, 13), (106, 1))
-```
+| Models | Number of Attributes | Size of Training Data | Size of Testing Data |
+| :---: | :---: | :---: | :---: |
+| Bostion Housing | 13 | 400 | 106 |
+| Abalone | 10 | 3133 | 1044 |
+| Kin8nm | 10 | 5000 | 3192 |
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
 ![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
@@ -74,10 +76,6 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 ![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
 ![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
 ## Predict Age of Abalone
-```python
->>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
-((3133, 10), (3133, 1), (1044, 10), (1044, 1))
-```
 ![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
 ![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
 ![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
@@ -85,10 +83,6 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 ![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
 ![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
 ## Predict Kinematics of 8-link Robot Arm
-```python
->>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
-((5000, 8), (5000, 1), (3192, 8), (3192, 1))
-```
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
 ![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
