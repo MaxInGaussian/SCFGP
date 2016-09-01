@@ -371,6 +371,7 @@ class SCFGP(object):
         with open(path, "rb") as load_f:
             load_pack = pickle.load(load_f)
         self.seed, self.R, self.M = load_pack[0][:3]
+        self.generate_ID()
         self.use_inducing_inputs, self.use_optimized_phases = load_pack[0][3:5]
         self.add_low_rank_freq, self.precompute_c_method = load_pack[0][5:7]
         npr.seed(self.seed)

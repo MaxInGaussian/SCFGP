@@ -28,14 +28,13 @@ def load_kin8nm_data(proportion=3192./8192):
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_kin8nm_data()
 rank = int(X_train.shape[1]/2+1)
-Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*2 for i in range(10)]
+Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1) for i in range(10)]
 try:
     best_model = SCFGP(msg=False)
-    best_model.load("best_low_rank.pkl")
+    best_model.load("kin8nm_best_model.pkl")
     best_model_score = best_model.SCORE
 except (FileNotFoundError, IOError):
     best_model = None
-    best_model_score = 0
 model_types = ["zph", "zf", "ph", "f"]
 num_models = len(model_types)
 metrics = {
@@ -58,11 +57,14 @@ for M in Ms:
                 funcs = (model.train_func, model.pred_func)
             else:
                 model.fit(X_train, y_train, X_test, y_test, funcs)
-            model_score = model.SCORE
-            if(model_score > best_model_score):
-                best_model_score = model_score
-                model.save("best_low_rank.pkl")
+            if(best_model is None):
+                model.save("kin8nm_best_model.pkl")
                 best_model = model
+            else:
+                best_model.predict(X_test, y_test)
+                if(model.SCORE > best_model.SCORE):
+                    model.save("kin8nm_best_model.pkl")
+                    best_model = model
             results["MAE"].append(model.TsMAE)
             results["MSE"].append(model.TsMSE)
             results["RMSE"].append(model.TsRMSE)
@@ -71,7 +73,7 @@ for M in Ms:
             results["TIME"].append(model.TrTime)
             print("\n>>>", model.NAME)
             print("    Model Selection Score\t\t\t\t= %.4f%s(Best %.4f)"%(
-                model_score, "  ", best_model_score))
+                model.SCORE, "  ", best_model.SCORE))
             print("    Mean Absolute Error\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsMAE, "  ", best_model.TsMAE))
             print("    Mean Square Error\t\t\t\t\t= %.4f%s(Best %.4f)"%(
