@@ -94,14 +94,12 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 # Examine the Efficacy of Training Process on Real-Time
 ## Training on High-dimensional Inputs (Boston Housing Prices)
 ```python
-model.fit(X_train, y_train, {X_test}, {y_test}, plot_training=True)
-# <>: necessary inputs, {}: optional inputs
+model.fit(X_train, y_train, X_test, y_test, plot_training=True)
 ```
 ![PlotTraining](experiments/plot_training.gif?raw=true "Plot Training")
 ## Training on One-dimensional Inputs (Boston Housing Prices)
 ```python
-model.fit(X_train, y_train, {X_test}, {y_test}, plot_1d_function=True)
-# <>: necessary inputs, {}: optional inputs
+model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 ```
 ![Plot1DFunction](experiments/plot_1d_function.gif?raw=true "Plot 1D Function")
 #License
