@@ -92,12 +92,18 @@ Out[3]: ((5000, 8), (5000, 1), (3192, 8), (3192, 1))
 "Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
 </h3>
 # Examine the Efficacy of Training Process on Real-Time
-## Training on High-dimensional Data (Boston Housing Prices)
+## Training on High-dimensional Inputs (Boston Housing Prices)
 ```python
 model.fit(X_train, y_train, {X_test}, {y_test}, plot_training=True)
 # <>: necessary inputs, {}: optional inputs
 ```
-![BostonHousingPlotTraining](experiments/boston_housing/plot_training.gif?raw=true "Boston Housing Plot Training")
+![PlotTraining](experiments/plot_training.gif?raw=true "Plot Training")
+## Training on One-dimensional Inputs (Boston Housing Prices)
+```python
+model.fit(X_train, y_train, {X_test}, {y_test}, plot_1d_function=True)
+# <>: necessary inputs, {}: optional inputs
+```
+![Plot1DFunction](experiments/plot_1d_function.gif?raw=true "Plot 1D Function")
 #License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.

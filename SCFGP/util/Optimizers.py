@@ -69,6 +69,9 @@ class Optimizer(object):
                 min_f = f
             if(cvrg_iter > self.max_cvrg_iter):
                 break
+            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+                randp = np.random.rand()
+                x = randp*x+(1-randp)*argmin_x
             v = m*v-(1.0-m)*g
             x += step_size*v
         train(-1, argmin_x)
@@ -108,6 +111,9 @@ class Optimizer(object):
                 min_f = f
             if(cvrg_iter > self.max_cvrg_iter):
                 break
+            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+                randp = np.random.rand()
+                x = randp*x+(1-randp)*argmin_x
             avg_sq_grad = avg_sq_grad*gamma+g**2*(1-gamma)
             x -= step_size*g/(np.sqrt(avg_sq_grad)+1e-10)
         train(-1, argmin_x)
@@ -148,6 +154,9 @@ class Optimizer(object):
                 min_f = f
             if(cvrg_iter > self.max_cvrg_iter):
                 break
+            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+                randp = np.random.rand()
+                x = randp*x+(1-randp)*argmin_x
             m = (1-b1)*g+b1*m
             v = (1-b2)*(g**2)+b2*v
             mhat = m/(1-b1**(i+1))
@@ -193,6 +202,9 @@ class Optimizer(object):
                 min_f = f
             if(cvrg_iter > self.max_cvrg_iter):
                 break
+            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+                randp = np.random.rand()
+                x = randp*x+(1-randp)*argmin_x
             r = 1/(m+1)
             g1 = (1-r)*g1+r*g
             g2 = (1-r)*g2+r*g**2
