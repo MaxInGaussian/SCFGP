@@ -34,8 +34,8 @@ Or clone this repo:
 
 ## Dependencies
 ### Theano
-    Theano is used due to its nice and simple coding style to represent tedious formulas of SCFGP, and
-    the capability of computing automatic differentiation efficiently.
+    Theano is used due to its nice and simple syntax to set up the tedious formulas in SCFGP, and
+    its capability to computing automatic differentiation.
     
 To install Theano, see this page:
 
