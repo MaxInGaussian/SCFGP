@@ -57,10 +57,11 @@ model = SCFGP(rank=<rank_of_frequency_matrix>,
 model.fit(X_train, y_train, {X_test}, {y_test})
 ```
 # Performance on Benchmark Regression Datasets
-| First Header  | Second Header |
-| ------------- | ------------- |
-| Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  |
+| Dataset | Number of Attributes | Sample Size of Training Data | Sample Size of Testing Data |
+| ------------- | ------------- | ------------- | ------------- |
+| bostion Housing | 13 | 400 | 106 |
+| abalone | 10 | 3133 | 1044 |
+| kin8nm | 10 | 5000 | 3192 |
 ## Predict Boston Housing Prices
 ```python
 >>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
