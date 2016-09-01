@@ -62,7 +62,7 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 | Bostion Housing | 13 | 400 | 106 |
 | Abalone | 10 | 3133 | 1044 |
 | Kin8nm | 10 | 5000 | 3192 |
-# Performance of SCFGP with Different Size and Types of Fourier Features
+# Performance of Various Size and Types of Fourier Features
 ## Predict Boston Housing Prices
 | Models | Number of Attributes | Size of Training Data | Size of Testing Data |
 | :---: | :---: | :---: | :---: |
