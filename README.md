@@ -57,7 +57,7 @@ model = SCFGP(rank=<rank_of_frequency_matrix>,
 model.fit(X_train, y_train, {X_test}, {y_test})
 ```
 # Performance on Benchmark Regression Datasets
-| Dataset | Number of Attributes | Sample Size of Training Data | Sample Size of Testing Data |
+| Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
 | :---: | :---: | :---: | :---: |
 | bostion Housing | 13 | 400 | 106 |
 | abalone | 10 | 3133 | 1044 |
