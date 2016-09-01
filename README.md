@@ -55,8 +55,8 @@ model = SCFGP(rank=<rank_of_frequency_matrix>,
               fftype={feature_type},
               msg={print_message_or_not})
 model.fit(X_train, y_train, {X_test}, {y_test})
-# Performance on Benchmark Regression Datasets
 ```
+# Performance on Benchmark Regression Datasets
 | First Header  | Second Header |
 | ------------- | ------------- |
 | Content Cell  | Content Cell  |
