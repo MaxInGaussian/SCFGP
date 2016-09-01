@@ -339,8 +339,8 @@ class SCFGP(object):
             self.TsMSE = np.mean((self.ys_pred-ys)**2.)
             self.TsRMSE = np.sqrt(np.mean((self.ys_pred-ys)**2.))
             self.TsNMSE = self.TsMSE/np.var(ys)
-            self.TsMNLP = 0.5*np.log(2*np.pi)+0.5*np.mean(((ys-self.ys_pred)/\
-                self.ys_pred_std)**2+np.log(self.ys_pred_std**2))
+            self.TsMNLP = 0.5*np.mean(((ys-self.ys_pred)/\
+                self.ys_pred_std)**2+np.log(2*np.pi*self.ys_pred_std**2))
             self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
             self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
             self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
