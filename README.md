@@ -46,15 +46,21 @@ To install Theano, see this page:
 To install scikit-learn, see this page:
 
    https://github.com/scikit-learn/scikit-learn
-
-# Performance on Benchmark Regression Datasets
+# To Use SCFGP: Only 3 Lines of Code
 ```python
 from SCFGP import *
 # <>: necessary inputs, {}: optional inputs
-model = SCFGP(<rank of frequency matrix>, <# Fourier features>,
-              fftype={feature type}, msg={print message or not})
+model = SCFGP(rank=<rank_of_frequency_matrix>,
+              feature_size=<number_of_Fourier_features>,
+              fftype={feature_type},
+              msg={print_message_or_not})
 model.fit(X_train, y_train, {X_test}, {y_test})
+# Performance on Benchmark Regression Datasets
 ```
+| First Header  | Second Header |
+| ------------- | ------------- |
+| Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  |
 ## Predict Boston Housing Prices
 ```python
 >>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
