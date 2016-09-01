@@ -50,9 +50,10 @@ To install scikit-learn, see this page:
 # Use SCFGP for Regression
 ```python
 from SCFGP import *
-model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype={feature type}, msg={print message or not})
-model.fit(X_train, y_train, {X_test}, {y_test})
 # <>: necessary inputs, {}: optional inputs
+model = SCFGP(<rank of frequency matrix>, <# Fourier features>,
+              fftype={feature type}, msg={print message or not})
+model.fit(X_train, y_train, {X_test}, {y_test})
 ```
 ## Predict Boston Housing Prices
 ```python
