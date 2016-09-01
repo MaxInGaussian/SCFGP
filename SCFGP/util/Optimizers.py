@@ -1,5 +1,5 @@
 ################################################################################
-#  Sparsely Correlated Fourier Features Based Generalized Gaussian Process
+#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 

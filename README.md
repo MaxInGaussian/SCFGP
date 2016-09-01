@@ -1,8 +1,8 @@
 #SCFGP
 
-SCFGP is a proposed improvement of "Gaussian Processes for Machine Learning" -- a start-of-the-art machine learning technique originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/). Its idea is based on the optimization of sparsely correlated Fourier features. 
-It is implemented in python using Theano. It was originally
-designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
+SCFGP is a proposed improvement of "Gaussian Processes for Machine Learning" -- a state-of-the-art machine learning technique originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/). The idea of SCFGP is based on optimization of a small number of sparsely correlated Fourier features, so that the training complexity can be greatly reduced. 
+
+It is implemented in python using Theano and originally designed by Max W. Y. Lam (maxingaussian@gmail.com).
 
 ###Highlights of SCFGP
 
@@ -54,9 +54,14 @@ model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<fe
 model.fit(X_train, y_train, X_test, y_test)
 ```
 ## Predict Boston Housing Prices
-![BostonHousingMSE](experiments/boston_housing_mse.png?raw=true "Boston Housing MSE")
-![BostonHousingMNLP](experiments/boston_housing_mnlp.png?raw=true "Boston Housing MNLP")
-![BostonHousingTIME](experiments/boston_housing_time.png?raw=true "Boston Housing Time")
+![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
+![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
+![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
+![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
+![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
+![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
+## Predict Boston Housing Prices
+
 #Use SCFGP for Supervised Dimensionality Reduction
 ```python
 from SCFGP import SCFGP
