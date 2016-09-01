@@ -55,6 +55,7 @@ model = SCFGP(rank=<rank_of_frequency_matrix>,
               fftype={feature_type},
               msg={print_message_or_not})
 model.fit(X_train, y_train, {X_test}, {y_test})
+predict_mean, predict_std = model.predict(X_test, {y_test})
 ```
 # Performance on Benchmark Regression Datasets
 | Benchmark Regression Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
