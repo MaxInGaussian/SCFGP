@@ -57,8 +57,8 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 ```
 ## Predict Boston Housing Prices
 ```python
-In [1]: X_train.shape, y_train.shape, X_test.shape, y_test.shape
-Out[1]: ((400, 13), (400, 1), (106, 13), (106, 1))
+>>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
+((400, 13), (400, 1), (106, 13), (106, 1))
 ```
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
@@ -68,8 +68,8 @@ Out[1]: ((400, 13), (400, 1), (106, 13), (106, 1))
 ![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
 ## Predict Age of Abalone
 ```python
-In [2]: X_train.shape, y_train.shape, X_test.shape, y_test.shape
-Out[2]: ((3133, 10), (3133, 1), (1044, 10), (1044, 1))
+>>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
+((3133, 10), (3133, 1), (1044, 10), (1044, 1))
 ```
 ![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
 ![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
@@ -79,8 +79,8 @@ Out[2]: ((3133, 10), (3133, 1), (1044, 10), (1044, 1))
 ![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
 ## Predict Kinematics of 8-link Robot Arm
 ```python
-In [3]: X_train.shape, y_train.shape, X_test.shape, y_test.shape
-Out[3]: ((5000, 8), (5000, 1), (3192, 8), (3192, 1))
+>>> X_train.shape, y_train.shape, X_test.shape, y_test.shape
+((5000, 8), (5000, 1), (3192, 8), (3192, 1))
 ```
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
