@@ -65,8 +65,6 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 ##Predict Boston Housing Prices
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Bostion Housing | 13 | 400 | 106 | 13 | 400 | 106 |
-| GPML | --- | --- | --- | 0.011 | 2.25 | --- |
 | SCFGP | 1.3398 | 3.1828 | 1.7841 | 0.0405 | 2.0106 | 12.8740 |
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
@@ -77,8 +75,6 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 ## Predict Age of Abalone
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Bostion Housing | 13 | 400 | 106 | 13 | 400 | 106 |
-| Matrix-Variate Dirichlet Process Mixture Models | 10 | 3133 | 1044 | 13 | 400 | 106 |
 | SCFGP | 1.4113 | 3.8153 | 1.9533 | 0.3715 | 2.0916 | 9.5621 |
 ![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
 ![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
@@ -89,8 +85,6 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 ## Predict Kinematics of 8-link Robot Arm
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Bostion Housing | 13 | 400 | 106 | 13 | 400 | 106 |
-| Abalone | 10 | 3133 | 1044 | 13 | 400 | 106 |
 | SCFGP | 0.0561 | 0.0052 | 0.0718 | 0.0741 | -1.2170 | 355.6762 |
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
