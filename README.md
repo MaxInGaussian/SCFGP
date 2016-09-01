@@ -88,14 +88,14 @@ Out[3]: ((5000, 8), (5000, 1), (3192, 8), (3192, 1))
 ![Kin8nmMNLP](experiments/kin8nm/low_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
 ![Kin8nmTime](experiments/kin8nm/low_rank_plots/time.png?raw=true "Kin8nm Time")
 <h3 align="center">
-"Training time becomes less sensitive to the sample size, sensitive to the number of Fourier feature"
+"Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
 </h3>
-## Examine the Efficacy of Training Process on Real-Time
+# Examine the Efficacy of Training Process on Real-Time
 ```python
 model.fit(X_train, y_train, {X_test}, {y_test}, plot_training=True)
 # <>: necessary inputs, {}: optional inputs
 ```
-# Training on High-dimensional Data (Boston Housing Prices)
+## Training on High-dimensional Data (Boston Housing Prices)
 ![BostonHousingPlotTraining](experiments/boston_housing/plot_training.gif?raw=true "Boston Housing Plot Training")
 #License
 Copyright (c) 2016, Max W. Y. Lam
