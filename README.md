@@ -66,7 +66,7 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Bostion Housing | 13 | 400 | 106 | 13 | 400 | 106 |
-| Matrix-Variate Dirichlet Process Mixture Models | 10 | 3133 | 1044 | 13 | 400 | 106 |
+| GPML | --- | --- | --- | 0.011 | 2.25 | --- |
 | SCFGP | 1.3398 | 3.1828 | 1.7841 | 0.0405 | 2.0106 | 12.8740 |
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
