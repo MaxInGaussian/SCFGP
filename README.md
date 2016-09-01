@@ -68,12 +68,12 @@ model.fit(X_train, y_train, X_test, y_test)
 ![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
 ![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
 ## Predict Kinematics Of An 8-link Robot Arm
-![Kin8nmMAE](experiments/kin8nm/full_rank_plots/mae.png?raw=true "Kin8nm MAE")
-![Kin8nmMSE](experiments/kin8nm/full_rank_plots/mse.png?raw=true "Kin8nm MSE")
-![Kin8nmRMSE](experiments/kin8nm/full_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
-![Kin8nmNMSE](experiments/kin8nm/full_rank_plots/nmse.png?raw=true "Kin8nm NMSE")
-![Kin8nmMNLP](experiments/kin8nm/full_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
-![Kin8nmTime](experiments/kin8nm/full_rank_plots/time.png?raw=true "Kin8nm Time")
+![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
+![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
+![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
+![Kin8nmNMSE](experiments/kin8nm/low_rank_plots/nmse.png?raw=true "Kin8nm NMSE")
+![Kin8nmMNLP](experiments/kin8nm/low_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
+![Kin8nmTime](experiments/kin8nm/low_rank_plots/time.png?raw=true "Kin8nm Time")
 #Use SCFGP for Supervised Dimensionality Reduction
 ```python
 from SCFGP import SCFGP
