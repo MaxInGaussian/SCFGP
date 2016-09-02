@@ -1,7 +1,8 @@
 ################################################################################
-#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
+#  SCFGP: Sparsely Correlated Fourier Features Based Gaussian Process
+#  Github: https://github.com/MaxInGaussian/SCFGP
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
-################################################################################
+##################################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
