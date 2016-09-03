@@ -79,7 +79,7 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 | [GP with Student-t Likelihood](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
 | **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | **12.8740** |
 
-Performance of SCFGP refers to this model:
+P.S. Performance of SCFGP refers to this model:
 ```python
 boston_housing_best_model = SCFGP()
 boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_model.pkl")
@@ -95,6 +95,13 @@ boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_m
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | SCFGP | 1.4113 | 3.8153 | 1.9533 | 0.3715 | 2.0916 | 9.5621 |
+
+P.S. Performance of SCFGP refers to this model:
+```python
+abalone_best_model = SCFGP()
+abalone_best_model.load("experiments/abalone/abalone_best_model.pkl")
+```
+
 ![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
 ![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
 ![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
@@ -105,6 +112,14 @@ boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_m
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | SCFGP | 0.0561 | 0.0052 | 0.0718 | 0.0741 | -1.2170 | 355.6762 |
+
+
+P.S. Performance of SCFGP refers to this model:
+```python
+kin8nm_best_model = SCFGP()
+kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
+```
+
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
 ![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
