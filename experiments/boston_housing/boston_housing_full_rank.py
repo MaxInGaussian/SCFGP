@@ -1,18 +1,18 @@
 ################################################################################
-#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
+#  SCFGP: Sparsely Correlated Fourier Features Based Gaussian Process
+#  Github: https://github.com/MaxInGaussian/SCFGP
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 try:
-    from SCFGP import Regressor
+    from SCFGP import SCFGP
 except:
     print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
     path.append("../../")
-    from SCFGP import Regressor
+    from SCFGP import SCFGP
     print("done.")
 
 def load_boston_data(proportion=106./506):
@@ -31,13 +31,12 @@ X_train, y_train, X_test, y_test = load_boston_data()
 rank = "full"
 Ms = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*2 for i in range(10)]
 try:
-    best_model = Regressor(msg=False)
-    best_model.load("best_full_rank.pkl")
+    best_model = SCFGP(msg=False)
+    best_model.load("boston_housing_best_model.pkl")
     best_model_score = best_model.SCORE
 except (FileNotFoundError, IOError):
     best_model = None
-    best_model_score = 0
-model_types = ["phz", "fz", "ph", "f"]
+model_types = ["zph", "zf", "ph", "f"]
 num_models = len(model_types)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
@@ -53,17 +52,20 @@ for M in Ms:
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
             X_train, y_train, X_test, y_test = load_boston_data()
-            model = Regressor(rank, M, fftype=fftype, msg=False)
+            model = SCFGP(rank, M, fftype=fftype, msg=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
             else:
                 model.fit(X_train, y_train, X_test, y_test, funcs)
-            model_score = model.SCORE
-            if(model_score > best_model_score):
-                best_model_score = model_score
-                model.save("best_full_rank.pkl")
+            if(best_model is None):
+                model.save("boston_housing_best_model.pkl")
                 best_model = model
+            else:
+                best_model.predict(X_test, y_test)
+                if(model.SCORE > best_model.SCORE):
+                    model.save("boston_housing_best_model.pkl")
+                    best_model = model
             results["MAE"].append(model.TsMAE)
             results["MSE"].append(model.TsMSE)
             results["RMSE"].append(model.TsRMSE)
@@ -71,19 +73,19 @@ for M in Ms:
             results["MNLP"].append(model.TsMNLP)
             results["TIME"].append(model.TrTime)
             print("\n>>>", model.NAME)
-            print("    Model Selection Score\t\t\t= %.3f%s(Best %.4f)"%(
-                model_score, "  ", best_model_score))
-            print("    Mean Absolute Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
+            print("    Model Selection Score\t\t\t\t= %.4f%s(Best %.4f)"%(
+                model.SCORE, "  ", best_model.SCORE))
+            print("    Mean Absolute Error\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsMAE, "  ", best_model.TsMAE))
-            print("    Mean Square Error\t\t\t\t= %.3f%s(Avg. %.4f)"%(
+            print("    Mean Square Error\t\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsMSE, "  ", best_model.TsMSE))
-            print("    Root Mean Square Error\t\t\t= %.3f%s(Avg. %.4f)"%(
+            print("    Root Mean Square Error\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TsRMSE, "  ", best_model.TsRMSE))
-            print("    Normalized Mean Square Error \t= %.3f%s(Avg. %.4f)"%(
+            print("    Normalized Mean Square Error \t= %.4f%s(Best %.4f)"%(
                 model.TsNMSE, "  ", best_model.TsNMSE))
-            print("    Mean Negative Log Probability\t= %.3f%s(Avg. %.4f)"%(
+            print("    Mean Negative Log Probability\t= %.4f%s(Best %.4f)"%(
                 model.TsMNLP, "  ", best_model.TsMNLP))
-            print("    Training Time\t\t\t\t\t= %.3f%s(Avg. %.4f)"%(
+            print("    Training Time\t\t\t\t\t\t= %.4f%s(Best %.4f)"%(
                 model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))

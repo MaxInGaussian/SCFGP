@@ -1,5 +1,6 @@
 ################################################################################
-#  Regression Model: Sparsely Correlated Fourier Features Based Gaussian Process
+#  SCFGP: Sparsely Correlated Fourier Features Based Gaussian Process
+#  Github: https://github.com/MaxInGaussian/SCFGP
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
@@ -8,12 +9,12 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as anm
 from sklearn.preprocessing import label_binarize
 try:
-    from SCFGP import Regressor
+    from SCFGP import SCFGP
 except:
     print("SCFGP is not installed yet! Trying to call directly from source...")
     from sys import path
     path.append("../../")
-    from SCFGP import Regressor
+    from SCFGP import SCFGP
     print("done.")
 
     
@@ -36,7 +37,7 @@ Ms = [10, 30, 50]
 model_types = ["phz", "fz", "ph", "f"]
 for M in Ms:
     for fftype in model_types:
-        model = Regressor(rank=2, feature_size=M, fftype=fftype)
+        model = SCFGP(rank=2, feature_size=M, fftype=fftype)
         def callback():
             if(model.iter == 1):
                 fig = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)

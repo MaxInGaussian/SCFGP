@@ -1,8 +1,8 @@
 #SCFGP
 
-SCFGP is a proposed improvement of "Gaussian Processes for Machine Learning" -- a start-of-the-art machine learning technique originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/). Its idea is based on the optimization of sparsely correlated Fourier features. 
-It is implemented in python using Theano. It was originally
-designed and is now managed by Max W. Y. Lam (maxingaussian@gmail.com).
+SCFGP is a proposed improvement of "Gaussian Processes for Machine Learning" -- a state-of-the-art machine learning technique originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/). The idea of SCFGP is based on optimization of a small number of sparsely correlated Fourier features, so that the training complexity can be greatly reduced. 
+
+It is implemented in python using Theano and originally designed by Max W. Y. Lam (maxingaussian@gmail.com).
 
 ###Highlights of SCFGP
 
@@ -34,8 +34,8 @@ Or clone this repo:
 
 ## Dependencies
 ### Theano
-    Theano is used due to its nice and simple coding style to represent tedious formulas of SCFGP, and
-    the capability of computing automatic differentiation efficiently.
+    Theano is used due to its nice and simple syntax to set up the tedious formulas in SCFGP, and
+    its capability of computing automatic differentiation.
     
 To install Theano, see this page:
 
@@ -46,44 +46,67 @@ To install Theano, see this page:
 To install scikit-learn, see this page:
 
    https://github.com/scikit-learn/scikit-learn
-
-# Use SCFGP for Regression
+# To Use SCFGP: Only 3 Lines of Code
 ```python
 from SCFGP import *
-model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<feature type>)
-model.fit(X_train, y_train, X_test, y_test)
+# <>: necessary inputs, {}: optional inputs
+model = SCFGP(rank=<rank_of_frequency_matrix>,
+              feature_size=<number_of_Fourier_features>,
+              fftype={feature_type},
+              msg={print_message_or_not})
+model.fit(X_train, y_train, {X_test}, {y_test})
+predict_mean, predict_std = model.predict(X_test, {y_test})
 ```
-## Predict Boston Housing Prices
-![BostonHousingMSE](experiments/boston_housing_mse.png?raw=true "Boston Housing MSE")
-![BostonHousingMNLP](experiments/boston_housing_mnlp.png?raw=true "Boston Housing MNLP")
-![BostonHousingTIME](experiments/boston_housing_time.png?raw=true "Boston Housing Time")
-#Use SCFGP for Supervised Dimensionality Reduction
-```python
-from SCFGP import SCFGP
-model = SCFGP(<rank of frequency matrix>, <size of Fourier features>, fftype=<feature type>)
-model.fit(X_train, y_train, X_test, y_test)
-```
-## Visualize MNIST
-### Feature Type 1: Fourier (sine & cosine)
-![MNIST-F-10](experiments/mnist/visualize_mnist_f_10.png?raw=true "MNIST F 10")
-![MNIST-F-30](experiments/mnist/visualize_mnist_f_30.png?raw=true "MNIST F 30")
-![MNIST-F-50](experiments/mnist/visualize_mnist_f_50.png?raw=true "MNIST F 50")
-### Feature Type 2: Fourier (sine & cosine) + Inducing Frequencies
-![MNIST-FZ-10](experiments/mnist/visualize_mnist_fz_10.png?raw=true "MNIST FZ 10")
-![MNIST-FZ-30](experiments/mnist/visualize_mnist_fz_30.png?raw=true "MNIST FZ 30")
-![MNIST-FZ-50](experiments/mnist/visualize_mnist_fz_50.png?raw=true "MNIST FZ 50")
-### Feature Type 3: Cosine with Adjustable Phases (only cosine)
-![MNIST-PH-10](experiments/mnist/visualize_mnist_ph_10.png?raw=true "MNIST PH 10")
-![MNIST-PH-30](experiments/mnist/visualize_mnist_ph_30.png?raw=true "MNIST PH 30")
-![MNIST-PH-50](experiments/mnist/visualize_mnist_ph_50.png?raw=true "MNIST PH 50")
-### Feature Type 4: Cosine with Adjustable Phases (only cosine) + Inducing Frequencies
-![MNIST-PHZ-10](experiments/mnist/visualize_mnist_phz_10.png?raw=true "MNIST PHZ 10")
-![MNIST-PHZ-30](experiments/mnist/visualize_mnist_phz_30.png?raw=true "MNIST PHZ 30")
-![MNIST-PHZ-50](experiments/mnist/visualize_mnist_phz_50.png?raw=true "MNIST PHZ 50")
+# Performance on Benchmark Regression Datasets
+| Benchmark Regression Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
+| :---: | :---: | :---: | :---: |
+| Bostion Housing | 13 | 400 | 106 |
+| Abalone | 10 | 3133 | 1044 |
+| Kin8nm | 10 | 5000 | 3192 |
+##Predict Boston Housing Prices
+| State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| SCFGP | 1.3398 | 3.1828 | 1.7841 | 0.0405 | 2.0106 | 12.8740 |
+![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
+![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
+![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
+![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
+![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
+![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
+## Predict Age of Abalone
+| State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| SCFGP | 1.4113 | 3.8153 | 1.9533 | 0.3715 | 2.0916 | 9.5621 |
+![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
+![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
+![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
+![AbaloneNMSE](experiments/abalone/full_rank_plots/nmse.png?raw=true "Abalone NMSE")
+![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
+![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
+## Predict Kinematics of 8-link Robot Arm
+| State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| SCFGP | 0.0561 | 0.0052 | 0.0718 | 0.0741 | -1.2170 | 355.6762 |
+![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
+![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
+![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
+![Kin8nmNMSE](experiments/kin8nm/low_rank_plots/nmse.png?raw=true "Kin8nm NMSE")
+![Kin8nmMNLP](experiments/kin8nm/low_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
+![Kin8nmTime](experiments/kin8nm/low_rank_plots/time.png?raw=true "Kin8nm Time")
 <h3 align="center">
-"The similariy of high-dimensional features over different classes are preserved!"
+"Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
 </h3>
-
+# Examine the Efficacy of Training Process on Real-Time
+## Training on High-dimensional Inputs (Boston Housing Prices)
+```python
+model.fit(X_train, y_train, X_test, y_test, plot_training=True)
+```
+![PlotTraining](experiments/plot_training.gif?raw=true "Plot Training")
+## Training on One-dimensional Inputs (Boston Housing Prices)
+```python
+model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
+```
+![Plot1DFunction](experiments/plot_1d_function.gif?raw=true "Plot 1D Function")
 #License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.
