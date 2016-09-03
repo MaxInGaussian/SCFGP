@@ -72,9 +72,10 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 | Abalone | 10 | 3133 | 1044 |
 | Kin8nm | 10 | 5000 | 3192 |
 ##Predict Boston Housing Prices
-| State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
+| Regression Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| SCFGP | 1.3398 | 3.1828 | 1.7841 | 0.0405 | 2.0106 | 12.8740 |
+| [GP with student-t likelihood](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
+| **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | **12.8740** |
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
 ![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
