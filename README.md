@@ -105,7 +105,7 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 <h3 align="center">
 "Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
 </h3>
-# Examine the Efficacy of Training Process on Real-Time
+# Visualize Training Process on Real-Time
 ## Training on High-dimensional Inputs (Boston Housing Prices)
 ```python
 model.fit(X_train, y_train, X_test, y_test, plot_training=True)
