@@ -1,6 +1,8 @@
 #SCFGP
 
-SCFGP is a proposed improvement of "Gaussian Processes for Machine Learning" -- a state-of-the-art machine learning technique originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/). The idea of SCFGP is based on optimization of a small number of sparsely correlated Fourier features, so that the training complexity can be greatly reduced.
+SCFGP is a proposed improvement of [Sparse Spectrum Gaussian Process](http://quinonero.net/Publications/lazaro-gredilla10a.pdf) (SPGP), which is a new branch of Gaussian process model that makes use of Fourier features. Recall that using Gaussian processes for machine learning is a state-of-the-art technique that originate from and popularize by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/).
+
+The idea behind SCFGP bases on optimizing a small collection of sparsely correlated Fourier features, so that the training complexity for high can be greatly reduced.
 
 The formulation of SCFGP is briefly described in this sheet: (Derivation will be included in the future)
 
