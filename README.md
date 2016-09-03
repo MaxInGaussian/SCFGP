@@ -78,7 +78,7 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 | [GP with Variable Selection](https://arxiv.org/pdf/1106.3181.pdf) | N/A | N/A | N/A | 0.1 | N/A | N/A |
 | [GP with Student-t Likelihood](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
 | **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | **12.8740** |
-<img src="experiments/boston_housing/full_rank_plots/mae.png" width="48">
+<img src="experiments/boston_housing/full_rank_plots/mae.png" width="30">
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
 ![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
