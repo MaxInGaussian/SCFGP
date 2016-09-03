@@ -29,7 +29,7 @@ def load_co2_data(proportion=0.1):
 Ms = [10]
 model_types = ["ph"]
 X, y = load_co2_data()
-opt = Optimizer("adam", [0.05, 0.9, 0.999], int(1e10), 20, 1e-6, True)
+opt = Optimizer("rmsprop", [0.05, 0.9], int(1e10), 20, 1e-6, True)
 for fftype in model_types:
     for rank in [50]:
         for M in Ms:
