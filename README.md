@@ -2,7 +2,9 @@
 
 SCFGP is a proposed improvement of [Sparse Spectrum Gaussian Process](http://quinonero.net/Publications/lazaro-gredilla10a.pdf) (SPGP), which is a new branch of Gaussian process model that makes use of Fourier features. Recall that using Gaussian processes for machine learning is a state-of-the-art technique that originate from and popularize by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/).
 
-The idea behind SCFGP bases on optimizing a small collection of sparsely correlated Fourier features, so that the training complexity for high can be greatly reduced.
+Based on minimization of the marginal likelihood, SCFGP selects a set of vectors to obtain a [Gramian matrix](https://en.wikipedia.org/wiki/Gramian_matrix), which is treated as the frequency matrix for later computation of Fourier features. This procedure indeed can be viewed as constructing sparsely correlated Fourier features. 
+
+Note that the Fourier features are identically and independently distributed in SPGP, therefore the size of optimization parameters is proportional to the number of Fourier features times the number of dimension. This is undoubtedly an unfavorable property, since the model is likely to stick in local minima and becomes very unstable when dealing with very high dimensional data, such as images, speech signals, text, etc.
 
 The formulation of SCFGP is briefly described in this sheet: (Derivation will be included in the future)
 
