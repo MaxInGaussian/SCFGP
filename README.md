@@ -78,8 +78,8 @@ model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 ```
 ![Plot1DFunction](experiments/plot_1d_function.gif?raw=true "Plot 1D Function")
 
-# Performance on Benchmark Regression Datasets
-| Benchmark Regression Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
+# Performance of SCFGP on Benchmark Datasets
+| Benchmark Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
 | :---: | :---: | :---: | :---: |
 | Bostion Housing | 13 | 400 | 106 |
 | Abalone | 10 | 3133 | 1044 |
