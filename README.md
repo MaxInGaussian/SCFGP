@@ -67,7 +67,7 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 ```
 
 # Analyze Training Process on Real Time
-## Training on High-dimensional Inputs (Boston Housing Prices)
+## Training on High-dimensional Inputs (Boston Housing)
 ```python
 model.fit(X_train, y_train, X_test, y_test, plot_training=True)
 ```
