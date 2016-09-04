@@ -87,11 +87,12 @@ model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 ##Predict Boston Housing Prices
 | Regression Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | 12.8740 |
+| [Boosting](http://professordrucker.com/Pubications/ImprovingRegressorsUsingBoostingTechniques.pdf) | N/A | 10.7 | N/A | N/A | N/A | N/A |
 | [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 12.4 | N/A | N/A | N/A | **6.0** |
 | [PS-SVR](http://epubs.siam.org/doi/abs/10.1137/1.9781611972726.16) | N/A | 7.887 | N/A | 0.0833 | N/A | N/A |
 | [spLGP](http://www2.stat.duke.edu/~st118/Publication/TokdarZhuGhosh.pdf) | 1.73 | N/A | N/A | N/A | N/A | N/A |
 | [Student-t GP](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
-| **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | 12.8740 |
 
 P.S. SCFGP's performance refers to this model:
 ```python
@@ -102,8 +103,8 @@ boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_m
 ## Predict Age of Abalone
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 4.65 | N/A | N/A | N/A | 57.0 |
 | **SCFGP** | **1.4113** | **3.8153** | **1.9533** | **0.3715** | **2.0916** | **9.5621** |
+| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 4.65 | N/A | N/A | N/A | 57.0 |
 
 P.S. SCFGP's performance refers to this model:
 ```python
