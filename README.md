@@ -146,7 +146,8 @@ kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 ![Kin8nmMNLP](experiments/kin8nm/low_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
 ![Kin8nmTime](experiments/kin8nm/low_rank_plots/time.png?raw=true "Kin8nm Time")
 <h3 align="center">
-"Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
+Training time of SCFGP is not quite sensitive to the size of training data.
+On the contrary, it is to a large extent dependent on the number of Fourier features.
 </h3>
 
 #License
