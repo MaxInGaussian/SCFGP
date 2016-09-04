@@ -123,7 +123,7 @@ kin8nm_best_model = SCFGP()
 kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 ```
 
-# Performance of SCFGP V.S. Number of Fourier features
+# Performance of SCFGP v.s. Number of Fourier features
 <h2 align="center">
 Bostion Housing
 </h2>
