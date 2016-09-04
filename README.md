@@ -124,21 +124,27 @@ kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 ```
 
 # Performance of SCFGP V.S. Number of Fourier features
-## Bostion Housing
+<h2 align="center">
+Bostion Housing
+</h2>
 ![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
 ![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
 ![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
 ![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
 ![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
 ![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
-## Abalone
+<h2 align="center">
+Abalone
+</h2>
 ![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
 ![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
 ![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
 ![AbaloneNMSE](experiments/abalone/full_rank_plots/nmse.png?raw=true "Abalone NMSE")
 ![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
 ![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
-## Kin8nm
+<h2 align="center">
+Kin8nm
+</h2>
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
 ![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
