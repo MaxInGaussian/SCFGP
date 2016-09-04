@@ -80,7 +80,7 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 | [Student-t GP](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
 | **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | 12.8740 |
 
-P.S. Performance of SCFGP refers to this model:
+P.S. SCFGP's performance refers to this model:
 ```python
 boston_housing_best_model = SCFGP()
 boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_model.pkl")
@@ -92,7 +92,7 @@ boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_m
 | [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 4.65 | N/A | N/A | N/A | 57.0 |
 | **SCFGP** | **1.4113** | **3.8153** | **1.9533** | **0.3715** | **2.0916** | **9.5621** |
 
-P.S. Performance of SCFGP refers to this model:
+P.S. SCFGP's performance refers to this model:
 ```python
 abalone_best_model = SCFGP()
 abalone_best_model.load("experiments/abalone/abalone_best_model.pkl")
@@ -104,12 +104,11 @@ abalone_best_model.load("experiments/abalone/abalone_best_model.pkl")
 | **SCFGP** | **0.0561** | **0.0052** | **0.0718** | **0.0741** | **-1.2170** | **355.6762** |
 
 
-P.S. Performance of SCFGP refers to this model:
+P.S. SCFGP's performance refers to this model:
 ```python
 kin8nm_best_model = SCFGP()
 kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 ```
-
 
 # Performance v.s. Number of Fourier features
 ## Bostion Housing
