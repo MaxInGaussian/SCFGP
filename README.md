@@ -74,10 +74,11 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 ##Predict Boston Housing Prices
 | Regression Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 12.4 | N/A | N/A | N/A | **6.0** |
 | [PS-SVR](http://epubs.siam.org/doi/abs/10.1137/1.9781611972726.16) | N/A | 7.887 | N/A | 0.0833 | N/A | N/A |
 | [spLGP](http://www2.stat.duke.edu/~st118/Publication/TokdarZhuGhosh.pdf) | 1.73 | N/A | N/A | N/A | N/A | N/A |
 | [Student-t GP](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
-| **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | **12.8740** |
+| **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | 12.8740 |
 
 P.S. Performance of SCFGP refers to this model:
 ```python
@@ -85,16 +86,11 @@ boston_housing_best_model = SCFGP()
 boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_model.pkl")
 ```
 
-![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
-![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
-![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
-![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
-![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
-![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
 ## Predict Age of Abalone
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| SCFGP | 1.4113 | 3.8153 | 1.9533 | 0.3715 | 2.0916 | 9.5621 |
+| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 4.65 | N/A | N/A | N/A | 57.0 |
+| **SCFGP** | **1.4113** | **3.8153** | **1.9533** | **0.3715** | **2.0916** | **9.5621** |
 
 P.S. Performance of SCFGP refers to this model:
 ```python
@@ -102,16 +98,10 @@ abalone_best_model = SCFGP()
 abalone_best_model.load("experiments/abalone/abalone_best_model.pkl")
 ```
 
-![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
-![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
-![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
-![AbaloneNMSE](experiments/abalone/full_rank_plots/nmse.png?raw=true "Abalone NMSE")
-![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
-![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
 ## Predict Kinematics of 8-link Robot Arm
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| SCFGP | 0.0561 | 0.0052 | 0.0718 | 0.0741 | -1.2170 | 355.6762 |
+| **SCFGP** | **0.0561** | **0.0052** | **0.0718** | **0.0741** | **-1.2170** | **355.6762** |
 
 
 P.S. Performance of SCFGP refers to this model:
@@ -120,6 +110,23 @@ kin8nm_best_model = SCFGP()
 kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 ```
 
+
+# Performance v.s. Number of Fourier features
+## Bostion Housing
+![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
+![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
+![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
+![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
+![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
+![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
+## Abalone
+![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
+![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
+![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
+![AbaloneNMSE](experiments/abalone/full_rank_plots/nmse.png?raw=true "Abalone NMSE")
+![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
+![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
+## Kin8nm
 ![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
 ![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
 ![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
@@ -129,6 +136,7 @@ kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 <h3 align="center">
 "Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
 </h3>
+
 # Visualize Training Process on Real-Time
 ## Training on High-dimensional Inputs (Boston Housing Prices)
 ```python
