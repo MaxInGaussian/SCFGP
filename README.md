@@ -74,9 +74,9 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 ##Predict Boston Housing Prices
 | Regression Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| [PS-SVR](http://epubs.siam.org/doi/abs/10.1137/1.9781611972726.16) | N/A | 7.887 | N/A | 0.0833 | N/A | N/A |
 | [spLGP](http://www2.stat.duke.edu/~st118/Publication/TokdarZhuGhosh.pdf) | 1.73 | N/A | N/A | N/A | N/A | N/A |
-| [GP with Variable Selection](https://arxiv.org/pdf/1106.3181.pdf) | N/A | N/A | N/A | 0.1 | N/A | N/A |
-| [GP with Student-t Likelihood](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
+| [Student-t GP](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
 | **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | **12.8740** |
 
 P.S. Performance of SCFGP refers to this model:
