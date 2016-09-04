@@ -39,5 +39,3 @@ for fftype in model_types:
         for M in Ms:
             model = SCFGP(rank, M, fftype=fftype, msg=False)
             model.fit(X, y, opt=opt, plot_1d_function=True)
-            plt.savefig('co2_%s_%d_%s.png'%(str(rank), M, fftype))
-            plt.close()

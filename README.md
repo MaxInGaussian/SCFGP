@@ -72,7 +72,7 @@ predict_mean, predict_std = model.predict(X_test, {y_test})
 model.fit(X_train, y_train, X_test, y_test, plot_training=True)
 ```
 ![PlotTraining](experiments/plot_training.gif?raw=true "Plot Training")
-## Training on One-dimensional Inputs (Boston Housing Prices)
+## Training on One-dimensional Inputs (Mauna Loa Atmospheric CO2)
 ```python
 model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 ```
