@@ -54,7 +54,7 @@ To install Theano, see this page:
 To install scikit-learn, see this page:
 
    https://github.com/scikit-learn/scikit-learn
-# To Use SCFGP: Only 3 Lines of Code
+# Use SCFGP: Only 3 Lines of Code
 ```python
 from SCFGP import *
 # <>: necessary inputs, {}: optional inputs
@@ -65,6 +65,19 @@ model = SCFGP(rank=<rank_of_frequency_matrix>,
 model.fit(X_train, y_train, {X_test}, {y_test})
 predict_mean, predict_std = model.predict(X_test, {y_test})
 ```
+
+# Feature of SCFGP: Real-Time Visualization of Training 
+## Training on High-dimensional Inputs (Boston Housing Prices)
+```python
+model.fit(X_train, y_train, X_test, y_test, plot_training=True)
+```
+![PlotTraining](experiments/plot_training.gif?raw=true "Plot Training")
+## Training on One-dimensional Inputs (Boston Housing Prices)
+```python
+model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
+```
+![Plot1DFunction](experiments/plot_1d_function.gif?raw=true "Plot 1D Function")
+
 # Performance on Benchmark Regression Datasets
 | Benchmark Regression Dataset | Number of Attributes | Size of Training Data | Size of Testing Data |
 | :---: | :---: | :---: | :---: |
@@ -136,17 +149,6 @@ kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
 "Training time is sensitive to the number of Fourier feature, but less sensitive to the sample size."
 </h3>
 
-# Visualize Training Process on Real-Time
-## Training on High-dimensional Inputs (Boston Housing Prices)
-```python
-model.fit(X_train, y_train, X_test, y_test, plot_training=True)
-```
-![PlotTraining](experiments/plot_training.gif?raw=true "Plot Training")
-## Training on One-dimensional Inputs (Boston Housing Prices)
-```python
-model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
-```
-![Plot1DFunction](experiments/plot_1d_function.gif?raw=true "Plot 1D Function")
 #License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.
