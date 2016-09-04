@@ -54,7 +54,7 @@ To install Theano, see this page:
 To install scikit-learn, see this page:
 
    https://github.com/scikit-learn/scikit-learn
-# Use SCFGP: Only 3 Lines of Code
+# How to use SCFGP? Only 3 Lines of Code
 ```python
 from SCFGP import *
 # <>: necessary inputs, {}: optional inputs
@@ -66,7 +66,7 @@ model.fit(X_train, y_train, {X_test}, {y_test})
 predict_mean, predict_std = model.predict(X_test, {y_test})
 ```
 
-# Feature of SCFGP: Real-Time Visualization of Training 
+# Analyze Training Process on Real Time?
 ## Training on High-dimensional Inputs (Boston Housing Prices)
 ```python
 model.fit(X_train, y_train, X_test, y_test, plot_training=True)
