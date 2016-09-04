@@ -21,7 +21,7 @@ theano.config.mode = 'FAST_RUN'
 theano.config.optimizer = 'fast_run'
 theano.config.reoptimize_unpickled_function = False
 
-class SCFGP(object):
+class __SCFGP__(object):
     
     """
     Sparsely Correlated Fourier Features Based Gaussian Process
@@ -33,12 +33,39 @@ class SCFGP(object):
     add_low_rank_freq = True
     precompute_c_method = None
     R, M, N, D, P = -1, -1, -1, -1, -1
-    pre_c, X, y, Xs, ys, hyper, Ri, alpha, train_func, pred_func = [None]*10
+    pre_c, X, y, Xs, ys, hyper, invL, alpha, train_func, pred_func = [None]*10
     TrCost, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [np.inf]*8
     
-    def __init__(self, rank=-1, feature_size=-1, msg=True):
+    def __init__(self,
+                 rank=-1,
+                 feature_size=-1,
+                 use_inducing_inputs=True,
+                 use_optimized_phases=True,
+                 add_low_rank_freq=True,
+                 precompute_c_method=None,
+                 fftype=None,
+                 msg=True):
         self.R = rank
         self.M = feature_size
+        if(fftype is None):
+            self.use_inducing_inputs = use_inducing_inputs
+            self.use_optimized_phases = use_optimized_phases
+            self.add_low_rank_freq = add_low_rank_freq
+        else:
+            self.use_inducing_inputs = False
+            self.use_optimized_phases = False
+            self.add_low_rank_freq = False
+            if("z" in fftype.lower()):
+                self.use_inducing_inputs = True
+            if("ph" in fftype.lower()):
+                self.use_optimized_phases = True
+            if(rank != "full"):
+                self.add_low_rank_freq = True
+        if(rank != "full"):
+            self.precompute_c_method = precompute_c_method
+        else:
+            self.add_low_rank_freq = False
+            self.precompute_c_method = None
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.msg = msg
@@ -55,84 +82,119 @@ class SCFGP(object):
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
         self.fftype = "PH" if self.use_optimized_phases else "F"
         self.fftype += "Z" if self.use_inducing_inputs else ""
-        self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
+        self.NAME = "SCFGP {Rank=%s, Feature Size=%d, Feature Type=%s}"%(
+            str(self.R), self.M, self.fftype)
         self.seed = np.prod([ord(c) for c in self.ID])%4294967291
         npr.seed(self.seed)
     
     def build_theano_model(self):
-        epsilon = 1e-8
         self.message("Compiling SCFGP theano model...")
-        X, y, Xs, Ri, alpha, Phi = T.dmatrices('X', 'Y', 'Xs', 'Ri', 'alpha', 'Phi')
-        N, S = X.shape[0], Xs.shape[0]
+        X, Y, Xs, invL, alpha = T.dmatrices('X', 'Y', 'Xs', 'invL', 'alpha')
+        N, P, S = X.shape[0], Y.shape[1], Xs.shape[0]
         hyper = T.dvector('hyper')
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
-        l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
-        L = T.reshape(l[self.D*self.R:], (self.D, self.R))
-        Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
-        f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
-        F = T.reshape(f[:self.M*self.R], (self.M, self.R))
-        Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
-        Omega = T.dot(L, F.T)
-        Z = T.dot(Z_L, Z_F.T)
-        theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
-        Theta = T.reshape(theta[:self.M], (1, self.M))
-        Theta_L = T.reshape(theta[self.M:], (1, self.R))
-        FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        t_Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
-        PhiTPhi = T.dot(t_Phi.T, t_Phi)
-        A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
-        R = sT.cholesky(A)
-        t_Ri = sT.matrix_inverse(R)
-        PhiTy = t_Phi.T.dot(y)
-        beta = T.dot(t_Ri, PhiTy)
-        t_alpha = T.dot(t_Ri.T, beta)
-        mu_f = T.dot(t_Phi, t_alpha)
-        mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
-        sigma_w = T.std(Omega, axis=1)
-        cost = T.log(2*sig2_n*np.pi)+1./sig2_n*((y**2).sum()-(beta**2).sum())+\
-            T.log(T.diagonal(R)).sum()-(sigma_w+mu_w**2-T.log(sigma_w)-1).sum()/N
+        if(self.R == "full"):
+            Omega = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
+                (self.D, self.M));t_ind+=self.D*self.M
+        else:
+            if(self.precompute_c_method is None):
+                c = T.reshape(hyper[t_ind:t_ind+self.D*self.R],
+                    (self.D, self.R));t_ind+=self.D*self.R
+            else:
+                c = theano.shared(self.pre_c)+\
+                    T.reshape(hyper[t_ind:t_ind+self.D*self.R],
+                    (self.D, self.R));t_ind+=self.D*self.R
+            d = T.reshape(hyper[t_ind:t_ind+self.M*self.R],
+                (self.M, self.R));t_ind+=self.M*self.R
+            Omega = T.dot(c, d.T)
+        if(self.use_inducing_inputs):
+            Z = T.reshape(hyper[t_ind:t_ind+self.D*self.M],
+                (self.D, self.M))[None, :, :];t_ind+=self.D*self.M
+            XOmega = T.sum((X[:, :, None]-Z)*Omega[None, :, :], 1)
+            XsOmega = T.sum((Xs[:, :, None]-Z)*Omega[None, :, :], 1)
+        else:
+            XOmega, XsOmega = T.dot(X, Omega), T.dot(Xs, Omega)
+        if(self.use_optimized_phases):
+            ph = hyper[t_ind:t_ind+self.M*2];t_ind+=self.M*2
+            cosXOmega = T.cos(XOmega+T.tile(ph[None, :self.M], (N, 1)))
+            cosXsOmega = T.cos(XsOmega+T.tile(ph[None, :self.M], (S, 1)))
+            sinXOmega = T.sin(XOmega+T.tile(ph[None, self.M:], (N, 1)))
+            sinXsOmega = T.sin(XsOmega+T.tile(ph[None, self.M:], (S, 1)))
+        else:
+            sinXOmega, sinXsOmega = T.sin(XOmega), T.sin(XsOmega)
+            cosXOmega, cosXsOmega = T.cos(XOmega), T.cos(XsOmega)
+        const = sig_f*T.sqrt(2./self.M)
+        Fourier_features_list = [[sinXOmega, cosXOmega], [sinXsOmega, cosXsOmega]]
+        if(self.add_low_rank_freq):
+            Xc, Xsc = X.dot(c), Xs.dot(c)
+            sinXc, sinXsc = T.sin(Xc), T.sin(Xsc)
+            cosXc, cosXsc = T.cos(Xc), T.cos(Xsc)
+            Fourier_features_list[0].extend([sinXc, cosXc])
+            Fourier_features_list[1].extend([sinXsc, cosXsc])
+        Phi = const*T.concatenate(Fourier_features_list[0], 1)
+        Phis = const*T.concatenate(Fourier_features_list[1], 1)
+        Gamma = T.dot(Phi.T, Phi)
+        A = Gamma+(sig2_n+1e-5)*T.identity_like(Gamma)
+        L = sT.cholesky(A)
+        invL_ = sT.matrix_inverse(L)
+        LiPhiTY = T.dot(invL_, Phi.T.dot(Y))
+        alpha_ = T.dot(invL_.T, LiPhiTY)
+        y_pred = T.dot(Phi, alpha_)
+        mu_omega = T.mean(Omega, axis=1)
+        sigma_omega = T.std(Omega, axis=1)
+        NLML = N*P/2*T.log(sig2_n*2*np.pi)+1./(2*sig2_n)*(
+            (Y**2).sum(0).sum()-(LiPhiTY**2).sum(0).sum())+\
+            P*T.log(T.diagonal(L)).sum()-\
+            0.5*(sigma_omega+mu_omega**2-T.log(sigma_omega)-1).sum()
+        cost = NLML/N/P
         dhyper = T.grad(cost, hyper)
-        train_input = [X, y, hyper]
+        train_input = [X, Y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [t_Ri, t_alpha, t_Phi, mu_f, cost, dhyper]
-        train_output_name = ['Ri', 'alpha', 'Phi', 'mu_f', 'cost', 'dhyper']
+        train_output = [invL_, alpha_, y_pred, cost, dhyper]
+        train_output_name = ['invL', 'alpha', 'y_pred', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
-        FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
-        mu_pred = T.dot(Phis, alpha)
-        PhisPhiT = T.dot(Phis, Phi.T)
-        PhisRiT = T.dot(Phis, Ri.T)
-        std_pred = sig_n*(1+(Ri.dot(Phis.T)**2).sum(0).T)**0.5
-        pred_input = [Xs, hyper, Ri, alpha, Phi]
-        pred_input_name = ['Xs', 'hyper', 'Ri', 'alpha', 'Phi']
-        pred_output = [mu_pred, std_pred]
-        pred_output_name = ['mu_pred', 'std_pred']
+        ys_pred = T.dot(Phis, alpha)
+        ys_pred_std = sig_n*(1+(invL.dot(Phis.T)**2).sum(0).T)**0.5
+        pred_input = [Xs, hyper, invL, alpha]
+        pred_input_name = ['Xs', 'hyper', 'invL', 'alpha']
+        pred_output = [ys_pred, ys_pred_std]
+        pred_output_name = ['ys_pred', 'ys_pred_std']
         self.pred_func = theano.function(
             pred_input, pred_output, on_unused_input='ignore')
         self.message("done.")
 
     def init_model(self):
+        a, b = 0, -2*np.log(4.)
         best_hyper, min_cost = None, np.inf
         for _ in range(50):
-            a_and_b = np.random.randn(2)
-            l = np.random.rand(2*self.D*self.R)
-            f = np.random.rand(2*self.M*self.R)
-            theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_and_b, l, f, theta))
-            Ri, alpha, Phi, mu_f, cost, _ = self.train_func(self.X, self.y, hyper)
+            hyper_list = [[a, b]]
+            if(self.R == "full"):
+                Omega = np.random.randn(self.D, self.M)
+                hyper_list.append(Omega.ravel())
+            else:
+                c = np.random.rand(self.D, self.R)
+                d = np.random.randn(self.M, self.R)
+                hyper_list.extend([c.ravel(), d.ravel()])
+            cost = 0
+            if(self.use_inducing_inputs):
+                Z = np.random.randn(self.D, self.M)
+                hyper_list.append(Z.ravel())
+            if(self.use_optimized_phases):
+                ph = np.random.rand(self.M*2)*2*np.pi
+                hyper_list.append(ph.ravel())
+            hyper = np.concatenate(hyper_list)
+            invL, alpha, y_pred, cost, _ = self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
         self.hyper = best_hyper.copy()
-        self.Ri, self.alpha, self.Phi, self.mu_f, self.cost, _ = self.train_func(
+        self.invL, self.alpha, self.y_pred, self.cost, _ = self.train_func(
             self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
@@ -142,6 +204,23 @@ class SCFGP(object):
         self.X = self.X_nml.forward_transform(X)
         self.y = self.y_nml.forward_transform(y)
         self.N, self.D = self.X.shape
+        _, self.P = self.y.shape
+        if(self.R != "full"):
+            if(self.precompute_c_method is not None):
+                if(self.R > self.D):
+                    self.R = self.D
+            if(self.precompute_c_method == "rpca"):
+                from sklearn.decomposition import RandomizedPCA
+                self.pre = RandomizedPCA(n_components=self.R)
+            elif(self.precompute_c_method == "rbm"):
+                from sklearn.neural_network import BernoulliRBM
+                self.pre = BernoulliRBM(n_components=self.R, n_iter=200)
+            elif(self.precompute_c_method == "spc"):
+                from sklearn.decomposition import DictionaryLearning
+                self.pre = DictionaryLearning(n_components=self.R, n_iter=200)
+        if(self.precompute_c_method is not None):
+            self.pre.fit(self.X)
+            self.pre_c = self.pre.components_.T
         if(funcs is None):
             self.build_theano_model()
         else:
@@ -152,7 +231,10 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [1e-1/self.R, 0.9, 0.9], 500, 30, 1e-4)
+            opt = Optimizer("smorms3", [0.05], 500, 8, 1e-4)
+            if(self.R != "full"):
+                opt.max_cvrg_iter /= 1+self.R/self.D
+                opt.cvrg_tol *= 1+self.R/self.D
         plt.close()
         if(plot_training):
             iter_list = []
@@ -196,7 +278,7 @@ class SCFGP(object):
                 errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
                 Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
                 mu, std = self.pred_func(
-                    Xplot, self.hyper, self.Ri, self.alpha, self.Phi)
+                    Xplot, self.hyper, self.invL, self.alpha)
                 mu = mu.ravel()
                 std = std.ravel()
                 for er in errors:
@@ -213,10 +295,10 @@ class SCFGP(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.Ri, self.alpha, self.Phi, mu_f, self.TrCost, dhyper =\
+            self.invL, self.alpha, y_pred, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
-            self.mu_f = self.y_nml.backward_transform(mu_f)
-            self.TrMSE = np.mean((self.mu_f-y)**2.)
+            self.y_pred = self.y_nml.backward_transform(y_pred)
+            self.TrMSE = np.mean((self.y_pred-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
             self.message(self.NAME, " TrCost = %.4f"%(self.TrCost))
@@ -247,18 +329,19 @@ class SCFGP(object):
 
     def predict(self, Xs, ys=None):
         self.Xs = self.X_nml.forward_transform(Xs)
-        mu_pred, std_pred = self.pred_func(
-            self.Xs, self.hyper, self.Ri, self.alpha, self.Phi)
-        self.mu_pred = self.y_nml.backward_transform(mu_pred)
-        self.std_pred = std_pred[:, None]*self.y_nml.data["std"]
+        ys_pred, ys_pred_std = self.pred_func(
+            self.Xs, self.hyper, self.invL, self.alpha)
+        self.ys_pred = self.y_nml.backward_transform(ys_pred)
+        self.ys_pred_std = np.tile(ys_pred_std[:, None],
+            (self.P,))*self.y_nml.data["std"][None, :]
         if(ys is not None):
             self.ys = self.y_nml.forward_transform(ys)
-            self.TsMAE = np.mean(np.abs(self.mu_pred-ys))
-            self.TsMSE = np.mean((self.mu_pred-ys)**2.)
-            self.TsRMSE = np.sqrt(np.mean((self.mu_pred-ys)**2.))
+            self.TsMAE = np.mean(np.abs(self.ys_pred-ys))
+            self.TsMSE = np.mean((self.ys_pred-ys)**2.)
+            self.TsRMSE = np.sqrt(np.mean((self.ys_pred-ys)**2.))
             self.TsNMSE = self.TsMSE/np.var(ys)
-            self.TsMNLP = 0.5*np.mean(((ys-self.mu_pred)/\
-                self.std_pred)**2+np.log(2*np.pi*self.std_pred**2))
+            self.TsMNLP = 0.5*np.mean(((ys-self.ys_pred)/\
+                self.ys_pred_std)**2+np.log(2*np.pi*self.ys_pred_std**2))
             self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
             self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
             self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
@@ -266,14 +349,16 @@ class SCFGP(object):
             self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
             self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
             self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
-        return self.mu_pred, self.std_pred
+        return self.ys_pred, self.ys_pred_std
 
     def save(self, path):
         import pickle
-        prior_setting = (self.seed, self.R, self.M)
+        prior_setting = (self.seed, self.R, self.M,
+            self.use_inducing_inputs, self.use_optimized_phases,
+            self.add_low_rank_freq, self.precompute_c_method)
         train_data = (self.X, self.y)
         normalizers = (self.X_nml, self.y_nml)
-        computed_matrices = (self.hyper, self.Ri, self.alpha, self.Phi)
+        computed_matrices = (self.pre_c, self.hyper, self.invL, self.alpha)
         performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime, 
             self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE,
                 self.TsMNLP, self.SCORE)
@@ -288,12 +373,15 @@ class SCFGP(object):
             load_pack = pickle.load(load_f)
         self.seed, self.R, self.M = load_pack[0][:3]
         self.generate_ID()
+        self.use_inducing_inputs, self.use_optimized_phases = load_pack[0][3:5]
+        self.add_low_rank_freq, self.precompute_c_method = load_pack[0][5:7]
         npr.seed(self.seed)
         self.X, self.y = load_pack[1]
         self.N, self.D = self.X.shape
+        _, self.P = self.y.shape
         self.build_theano_model()
         self.X_nml, self.y_nml = load_pack[2]
-        self.hyper, self.Ri, self.alpha, self.Phi = load_pack[3]
+        self.pre_c, self.hyper, self.invL, self.alpha = load_pack[3]
         self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime = load_pack[4][:4]
         self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][4:7]
         self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][7:]

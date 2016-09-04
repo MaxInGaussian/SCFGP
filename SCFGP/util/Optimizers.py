@@ -62,7 +62,7 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > 2):
+            if(cvrg_iter > self.max_cvrg_iter*0.5):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
@@ -102,7 +102,7 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > 2):
+            if(cvrg_iter > self.max_cvrg_iter*0.5):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
@@ -143,7 +143,7 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > 2):
+            if(cvrg_iter > self.max_cvrg_iter*0.5):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
@@ -189,7 +189,7 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > 2):
+            if(cvrg_iter > self.max_cvrg_iter*0.5):
                 adjust_step = False
             if(f < min_f):
                 min_f = f

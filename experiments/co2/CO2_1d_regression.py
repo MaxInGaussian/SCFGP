@@ -26,16 +26,10 @@ def load_co2_data(proportion=0.1):
     X = X.astype(np.float64)
     return X, y
 
-Ms = [10]
-model_types = ["ph"]
+Ms = [30]
 X, y = load_co2_data()
-<<<<<<< HEAD
-opt = Optimizer("adam", [0.05, 0.9, 0.999], int(1e10), 20, 1e-6, True)
-=======
-opt = Optimizer("rmsprop", [0.05, 0.9], int(1e10), 20, 1e-6, True)
->>>>>>> ef150f3820d5e2c2e85c25ff4b2bfcf2aaae6e20
-for fftype in model_types:
-    for rank in [50]:
-        for M in Ms:
-            model = SCFGP(rank, M, fftype=fftype, msg=False)
-            model.fit(X, y, opt=opt, plot_1d_function=True)
+opt = Optimizer("adam", [1e-3, 0.9, 0.9], 500, 30, 1e-5, False)
+for rank in [50]:
+    for M in Ms:
+        model = SCFGP(rank, M, msg=True)
+        model.fit(X, y, opt=opt, plot_1d_function=True)
