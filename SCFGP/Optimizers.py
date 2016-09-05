@@ -10,15 +10,15 @@ class Optimizer(object):
     
     " Uncontrainted Gradient-Based Optimizer (Objective Function Minimization) "
 
-    methods = ["sgd", "rmsprop", "adam", "smorms3"]
+    available_optimizers = ["sgd", "rmsprop", "adam", "smorms3"]
     
     max_iter, max_cvrg_iter, cvrg_tol, ln_params = 0, 0, 0, []
     stop_by_train_error = True
     
-    def __init__(self, meth, ln_params, max_iter, max_cvrg_iter, cvrg_tol,
+    def __init__(self, opt, ln_params, max_iter, max_cvrg_iter, cvrg_tol,
         stop_by_train_error=True):
-        assert meth in self.methods, "Invalid Optimization Method!"
-        self.meth = meth
+        assert opt.lower() in self.available_optimizers, "Invalid Optimizer!"
+        self.opt = opt.lower()
         self.max_iter = max_iter
         self.max_cvrg_iter = max_cvrg_iter
         self.cvrg_tol = cvrg_tol
@@ -26,13 +26,13 @@ class Optimizer(object):
         self.stop_by_train_error = stop_by_train_error
     
     def run(self, train, x0):
-        if(self.meth == "sgd"):
+        if(self.opt == "sgd"):
             self.sgd(train, x0)
-        elif(self.meth == "rmsprop"):
+        elif(self.opt == "rmsprop"):
             self.rmsprop(train, x0)
-        elif(self.meth == "adam"):
+        elif(self.opt == "adam"):
             self.adam(train, x0)
-        elif(self.meth == "smorms3"):
+        elif(self.opt == "smorms3"):
             self.smorms3(train, x0)
     
     ### Stochastic Gradient Descent with Momentum

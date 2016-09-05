@@ -27,17 +27,18 @@ def load_boston_data(proportion=106./506):
     return X_train, y_train, X_test, y_test
 
 repeats = 20
-rank_choices = [5, 10]
-feature_size_choices = [10, 20]
-sum_score, count_score = 0, 0
-for feature_size in feature_size_choices:
-    for rank in rank_choices:
+kerns = ["dot", "wht", "lin", "rbf", "per", "exp"]
+rank_choices = [2, 4, 6]
+feature_size_choices = [150, 100, 50]
+for rank in rank_choices:
+    scores = [[] for _ in kerns]
+    for feature_size in feature_size_choices:
         for _ in range(repeats):
             X_train, y_train, X_test, y_test = load_boston_data()
-            model = SCFGP(rank, feature_size, False)
-            model.fit(X_train, y_train, X_test, y_test)
-            sum_score += model.SCORE
-            count_score += 1
-            print("\n>>>", model.NAME)
-            print("    Model Selection Score = %.4f | Avg = %.4f"%(
-                model.SCORE, sum_score/count_score))
+            for i, kern in enumerate(kerns):
+                model = SCFGP(rank, feature_size, kern, kern, False)
+                model.fit(X_train, y_train, X_test, y_test, plot_training=True)
+                scores[i].append(model.SCORE)
+                print("\n>>>", model.NAME, kern)
+                print("    Score = %.4f | Avg = %.4f | Std = %.4f"%(
+                    model.SCORE, np.mean(scores[i]), np.std(scores[i])))

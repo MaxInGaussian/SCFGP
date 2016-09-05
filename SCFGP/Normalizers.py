@@ -10,31 +10,26 @@ class Normalizer(object):
     
     " Normalizer (Data Preprocessing) "
 
-    methods = ["categorize", "linear", "centralize",
+    available_normalizers = ["categorize", "linear", "centralize",
         "standardize", "sigmoid", "uniformize"]
     
     data = {}
     
-    def __init__(self, meth):
-        assert meth in self.methods, "Invalid Normalization Method!"
-        if(meth == "categorize"):
-            self.data = {"lbls": None}
-        elif(meth == "linear"):
+    def __init__(self, nml):
+        assert nml.lower() in self.available_normalizers, "Invalid Normalizer!"
+        self.nml = nml.lower()
+        if(self.nml == "linear"):
             self.data = {"cols": None, "min": 0, "max":0}
-        elif(meth == "centralize"):
+        elif(self.nml == "centralize"):
             self.data = {"cols": None, "mu":0}
-        elif(meth == "standardize"):
+        elif(self.nml == "standardize"):
             self.data = {"cols": None, "std": 0, "mu":0}
-        elif(meth == "sigmoid"):
+        elif(self.nml == "sigmoid"):
             self.data = {"cols": None, "std": 0, "mu":0}
-        elif(meth == "uniformize"):
+        elif(self.nml == "uniformize"):
             self.data = {"cols": None, "X_sort": None, "min": 0, "max":0}
-        self.meth = meth
     
     def fit(self, X):
-        if(self.meth == "categorize"):
-            self.data["lbls"] = np.unique(X)
-            return
         self.data["cols"] = list(set(range(X.shape[1])).difference(
             np.where(np.all(X == X[0,:], axis = 0))[0]))
         tX = X[:, self.data["cols"]]
@@ -49,20 +44,16 @@ class Normalizer(object):
                 self.data[key] = np.max(tX, axis=0)
     
     def forward_transform(self, X):
-        if(self.meth == "categorize"):
-            tX = np.zeros((self.data["lbls"].shape[0], X.shape[0], 1))
-            tX[np.where(X==self.data["lbls"])[1], np.arange(X.shape[0]), 0] = 1
-            return tX
         tX = X[:, self.data["cols"]]
-        if(self.meth == "linear"):
+        if(self.nml == "linear"):
             return (tX-self.data["min"])/(self.data["max"]-self.data["min"])
-        elif(self.meth == "centralize"):
+        elif(self.nml == "centralize"):
             return tX-self.data["mu"]
-        elif(self.meth == "standardize"):
+        elif(self.nml == "standardize"):
             return (tX-self.data["mu"])/self.data["std"]
-        elif(self.meth == "sigmoid"):
+        elif(self.nml == "sigmoid"):
             return np.tanh((tX-self.data["mu"])/self.data["std"])
-        elif(self.meth == "uniformize"):
+        elif(self.nml == "uniformize"):
             N, D = tX.shape
             _X = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             self.data["X_sort"] = np.sort(_X, axis=0).copy()
@@ -72,18 +63,16 @@ class Normalizer(object):
             return np.hstack((np.ones((_X.shape[0], 1)), _X))
     
     def backward_transform(self, X):
-        if(self.meth == "categorize"):
-            return self.data["lbls"][np.argmax(X, axis=0)]
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
-        if(self.meth == "linear"):
+        if(self.nml == "linear"):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]
-        elif(self.meth == "centralize"):
+        elif(self.nml == "centralize"):
             return X+self.data["mu"]
-        elif(self.meth == "standardize"):
+        elif(self.nml == "standardize"):
             return X*self.data["std"]+self.data["mu"]
-        elif(self.meth == "sigmoid"):
+        elif(self.nml == "sigmoid"):
             return (np.log(1+X)-np.log(1-X))/2.*self.data["std"]+self.data["mu"]
-        elif(self.meth == "uniformize"):
+        elif(self.nml == "uniformize"):
             N, D = X.shape
             _X = X.copy()
             for d in range(D):

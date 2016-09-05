@@ -4,18 +4,18 @@
 #  Author: Max W. Y. Lam (maxingaussian@gmail.com)
 ################################################################################
 
-from __future__ import absolute_import
-
 import sys, os, string, time
 import numpy as np
 import numpy.random as npr
 import matplotlib.pyplot as plt
 import matplotlib.animation as anm
-import theano;
-import theano.tensor as T;
+import theano
+import theano.tensor as T
 import theano.sandbox.linalg as sT
 
-from SCFGP.util import Optimizer, Normalizer
+from .FrequencyKernels import FrequencyKernel
+from .Optimizers import Optimizer
+from .Normalizers import Normalizer
 
 theano.config.mode = 'FAST_RUN'
 theano.config.optimizer = 'fast_run'
@@ -27,25 +27,27 @@ class SCFGP(object):
     Sparsely Correlated Fourier Features Based Gaussian Process
     """
 
-    ID, NAME, seed, opt, msg, SCORE = "", "", None, None, True, 0
-    use_inducing_inputs = True
-    use_optimized_phases = True
-    add_low_rank_freq = True
-    precompute_c_method = None
-    R, M, N, D, P = -1, -1, -1, -1, -1
-    pre_c, X, y, Xs, ys, hyper, Ri, alpha, train_func, pred_func = [None]*10
-    TrCost, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [np.inf]*8
+    ID, NAME, seed, verbose = "", "", None, True
+    freq_kern, iduc_kern, X_nml, y_nml = [None]*4
+    R, M, N, D, FKP, IKP = -1, -1, -1, -1, -1, -1
+    X, y, Xs, ys, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*10
+    SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
-    def __init__(self, rank=-1, feature_size=-1, msg=True):
+    def __init__(self, rank=-1, feature_size=-1,
+                 freq_kern="rbf", iduc_kern="rbf", verbose=True):
         self.R = rank
         self.M = feature_size
+        self.freq_kern = FrequencyKernel(freq_kern, self.R)
+        self.FKP = self.freq_kern.params_size
+        self.iduc_kern = FrequencyKernel(iduc_kern, self.R)
+        self.IKP = self.iduc_kern.params_size
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
-        self.msg = msg
+        self.verbose = verbose
         self.generate_ID()
     
     def message(self, *arg):
-        if(self.msg):
+        if(self.verbose):
             print(" ".join(map(str, arg)))
             sys.stdout.flush()
     
@@ -53,8 +55,6 @@ class SCFGP(object):
         self.ID = ''.join(
             chr(np.random.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
-        self.fftype = "PH" if self.use_optimized_phases else "F"
-        self.fftype += "Z" if self.use_inducing_inputs else ""
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
         self.seed = np.prod([ord(c) for c in self.ID])%4294967291
         npr.seed(self.seed)
@@ -70,17 +70,18 @@ class SCFGP(object):
         b = hyper[1];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
-        kp = hyper[t_ind:t_ind+2*self.R];t_ind+=2*self.R
-        kp1 = kp[:self.R][None, None, :]
-        kp2 = kp[self.R:][None, None, :]
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
         Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
         f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
         F = T.reshape(f[:self.M*self.R], (self.M, self.R))
         Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
-        Omega = T.sum((L[:, None, :])*(F[None, :, :]+kp1), 2)
-        Z = T.sum((Z_L[:, None, :])*(Z_F[None, :, :]+kp2), 2)
+        fkp = hyper[t_ind:t_ind+self.FKP];t_ind+=self.FKP
+        self.freq_kern.set_params(fkp)
+        Omega = self.freq_kern.fit(L, F)
+        ikp = hyper[t_ind:t_ind+self.IKP];t_ind+=self.IKP
+        self.iduc_kern.set_params(ikp)
+        Z = self.iduc_kern.fit(Z_L, Z_F)
         theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
         Theta = T.reshape(theta[:self.M], (1, self.M))
         Theta_L = T.reshape(theta[self.M:], (1, self.R))
@@ -125,11 +126,11 @@ class SCFGP(object):
         best_hyper, min_cost = None, np.inf
         for _ in range(20):
             a_and_b = np.random.randn(2)
-            kp = np.random.rand(2*self.R)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
+            kps = np.random.rand(self.FKP+self.IKP)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_and_b, kp, l, f, theta))
+            hyper = np.concatenate((a_and_b, l, f, kps, theta))
             Ri, alpha, Omega, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
@@ -157,9 +158,10 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [1e-1/(self.R**2)], self.R*100, 24, 1e-3)
+            opt = Optimizer("smorms3", [0.05/self.R], self.R*100, 18, 8*1e-4)
+        plt.close()
         if(plot_matrices):
-            plot_mat_fig = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
+            plot_mat_fig = plt.figure(facecolor='white', dpi=120)
             plot_mat_ax = plot_mat_fig.add_subplot(111)
             plot_mat_ax.set_title('Omega')
         if(plot_training):
@@ -225,13 +227,13 @@ class SCFGP(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.Ri, self.alpha, self.Omega, mu_f, self.TrCost, dhyper =\
+            self.Ri, self.alpha, self.Omega, mu_f, self.COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
-            self.message(self.NAME, " TrCost = %.4f"%(self.TrCost))
+            self.message(self.NAME, " COST = %.4f"%(self.COST))
             self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
             self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xs is not None and ys is not None):
@@ -244,13 +246,13 @@ class SCFGP(object):
                 plt.pause(0.1)
             if(plot_training):
                 iter_list.append(iter)
-                cost_list.append(self.TrCost)
+                cost_list.append(self.COST)
                 train_mse_list.append(self.TrMSE)
                 test_mse_list.append(self.TsMSE)
                 plt.pause(0.01)
             if(plot_1d_function):
                 plt.pause(0.05)
-            return self.TrCost, self.TrNMSE, dhyper
+            return self.COST, self.TrNMSE, dhyper
         if(plot_matrices):
             ani = anm.FuncAnimation(plot_mat_fig, animate, interval=500)
         if(plot_training):
@@ -287,14 +289,12 @@ class SCFGP(object):
     def save(self, path):
         import pickle
         prior_setting = (self.seed, self.R, self.M)
+        init_objects = (self.freq_kern, self.iduc_kern, self.X_nml, self.y_nml)
         train_data = (self.X, self.y)
-        normalizers = (self.X_nml, self.y_nml)
-        computed_matrices = (self.hyper, self.Ri, self.alpha, self.Phi)
-        performances = (self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime, 
-            self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE,
-                self.TsMNLP, self.SCORE)
-        save_pack = [prior_setting, train_data, normalizers,
-            computed_matrices, performances]
+        matrices = (self.hyper, self.Ri, self.alpha)
+        metrics = (self.SCORE, self.COST, self.TrMSE, self.TrNMSE, self.TrTime, 
+            self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE, self.TsMNLP)
+        save_pack = [prior_setting, init_objects, train_data, matrices, metrics]
         with open(path, "wb") as save_f:
             pickle.dump(save_pack, save_f, pickle.HIGHEST_PROTOCOL)
 
@@ -302,17 +302,19 @@ class SCFGP(object):
         import pickle
         with open(path, "rb") as load_f:
             load_pack = pickle.load(load_f)
-        self.seed, self.R, self.M = load_pack[0][:3]
+        self.seed, self.R, self.M = load_pack[0]
         self.generate_ID()
         npr.seed(self.seed)
-        self.X, self.y = load_pack[1]
+        self.freq_kern, self.iduc_kern, self.X_nml, self.y_nml = load_pack[1]
+        self.FKP = self.freq_kern.params_size
+        self.IKP = self.iduc_kern.params_size
+        self.X, self.y = load_pack[2]
         self.N, self.D = self.X.shape
         self.build_theano_model()
-        self.X_nml, self.y_nml = load_pack[2]
-        self.hyper, self.Ri, self.alpha, self.Phi = load_pack[3]
-        self.TrCost, self.TrMSE, self.TrNMSE, self.TrTime = load_pack[4][:4]
-        self.TsMAE, self.TsMSE, self.TsRMSE = load_pack[4][4:7]
-        self.TsNMSE, self.TsMNLP, self.SCORE = load_pack[4][7:]
+        self.hyper, self.Ri, self.alpha = load_pack[3]
+        [self.SCORE, self.COST, self.TrMSE, self.TrNMSE,
+            self.TrTime, self.TsMAE, self.TsMSE, self.TsRMSE,
+                self.TsNMSE, self.TsMNLP] = load_pack[4]
 
 
 

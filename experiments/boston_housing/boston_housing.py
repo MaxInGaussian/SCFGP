@@ -28,8 +28,9 @@ def load_boston_data(proportion=106./506):
 
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
-feature_size_choices = reversed([int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1) for i in range(2)])
-rank_choices = [5, 10]
+feature_size_choices = [int(np.log(
+    X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(5)]
+rank_choices = [2*(i+1) for i in range(5)]
 num_models = len(rank_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
@@ -40,7 +41,7 @@ metrics = {
     "TIME": ["Training Time", [[] for _ in range(num_models)]],
 }
 try:
-    best_model = SCFGP(msg=False)
+    best_model = SCFGP(verbose=False)
     best_model.load("best_model.pkl")
     best_model_score = best_model.SCORE
 except (FileNotFoundError, IOError):
@@ -51,7 +52,7 @@ for feature_size in feature_size_choices:
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
             X_train, y_train, X_test, y_test = load_boston_data()
-            model = SCFGP(rank, feature_size, msg=False)
+            model = SCFGP(rank, feature_size, verbose=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
@@ -72,11 +73,11 @@ for feature_size in feature_size_choices:
             results["MNLP"].append(model.TsMNLP)
             results["TIME"].append(model.TrTime)
             print("\n>>>", model.NAME)
-            print("    Model Selection Score\t\t\t= %.4f%s| Best = %.4f"%(
+            print("    Model Selection Score\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.SCORE, "  ", best_model.SCORE))
             print("    Mean Absolute Error\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TsMAE, "  ", best_model.TsMAE))
-            print("    Mean Square Error\t\t\t\t= %.4f%s| Best = %.4f"%(
+            print("    Mean Square Error\t\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TsMSE, "  ", best_model.TsMSE))
             print("    Root Mean Square Error\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TsRMSE, "  ", best_model.TsRMSE))
@@ -84,7 +85,7 @@ for feature_size in feature_size_choices:
                 model.TsNMSE, "  ", best_model.TsNMSE))
             print("    Mean Negative Log Probability\t= %.4f%s| Best = %.4f"%(
                 model.TsMNLP, "  ", best_model.TsMNLP))
-            print("    Training Time\t\t\t\t\t= %.4f%s| Best = %.4f"%(
+            print("    Training Time\t\t\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))
