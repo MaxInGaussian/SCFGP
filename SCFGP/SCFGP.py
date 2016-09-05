@@ -99,9 +99,8 @@ class SCFGP(object):
         mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
         var_w = (T.var(Omega, axis=1)*self.M+\
             T.var(L, axis=1)*self.R)/(self.M+self.R)
-        cost = T.log(2*sig2_n*np.pi)+(1./sig2_n*((y**2).sum()-\
-            (beta**2).sum())+2*T.log(T.diagonal(R)).sum()-\
-                (var_w+mu_w**2-T.log(var_w)-1).sum())/N
+        cost = T.log(2*sig2_n*np.pi)-1./sig2_n*(beta**2).sum()+\
+            2*T.log(T.diagonal(R)).sum()-(var_w+mu_w**2-T.log(var_w)-1).sum())/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
