@@ -62,7 +62,7 @@ class SCFGP(object):
     def build_theano_model(self):
         epsilon = 1e-8
         self.message("Compiling SCFGP theano model...")
-        X, y, Xs, Ri, alpha, Phi = T.dmatrices('X', 'Y', 'Xs', 'Ri', 'alpha', 'Phi')
+        X, y, Xs, Ri, alpha = T.dmatrices('X', 'Y', 'Xs', 'Ri', 'alpha')
         N, S = X.shape[0], Xs.shape[0]
         hyper = T.dvector('hyper')
         t_ind = 0
@@ -70,48 +70,51 @@ class SCFGP(object):
         b = hyper[1];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
+        kp = hyper[t_ind:t_ind+2*self.R];t_ind+=2*self.R
+        kp1 = kp[:self.R][None, None, :]
+        kp2 = kp[self.R:][None, None, :]
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
         Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
         f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
         F = T.reshape(f[:self.M*self.R], (self.M, self.R))
         Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
-        Omega = T.dot(L, F.T)
-        Z = T.dot(Z_L, Z_F.T)
+        Omega = T.sum((L[:, None, :])*(F[None, :, :]+kp1), 2)
+        Z = T.sum((Z_L[:, None, :])*(Z_F[None, :, :]+kp2), 2)
         theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
         Theta = T.reshape(theta[:self.M], (1, self.M))
         Theta_L = T.reshape(theta[self.M:], (1, self.R))
         FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
         FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        t_Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
-        PhiTPhi = T.dot(t_Phi.T, t_Phi)
+        Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
+        PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
         t_Ri = sT.matrix_inverse(R)
-        PhiTy = t_Phi.T.dot(y)
+        PhiTy = Phi.T.dot(y)
         beta = T.dot(t_Ri, PhiTy)
         t_alpha = T.dot(t_Ri.T, beta)
-        mu_f = T.dot(t_Phi, t_alpha)
+        mu_f = T.dot(Phi, t_alpha)
         mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
-        sigma_w = T.std(Omega, axis=1)
-        cost = T.log(2*sig2_n*np.pi)+1./sig2_n*((y**2).sum()-(beta**2).sum())+\
-            T.log(T.diagonal(R)).sum()-(sigma_w+mu_w**2-T.log(sigma_w)-1).sum()/N
+        var_w = (T.var(Omega, axis=1)*self.M+\
+            T.var(L, axis=1)*self.R)/(self.M+self.R)
+        cost = T.log(2*sig2_n*np.pi)+(1./sig2_n*((y**2).sum()-\
+            (beta**2).sum())+2*T.log(T.diagonal(R)).sum()-\
+                (var_w+mu_w**2-T.log(var_w)-1).sum())/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [t_Ri, t_alpha, t_Phi, mu_f, cost, dhyper]
-        train_output_name = ['Ri', 'alpha', 'Phi', 'mu_f', 'cost', 'dhyper']
+        train_output = [t_Ri, t_alpha, Omega, mu_f, cost, dhyper]
+        train_output_name = ['Ri', 'alpha', 'Omega', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
         FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
         FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
         Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
         mu_pred = T.dot(Phis, alpha)
-        PhisPhiT = T.dot(Phis, Phi.T)
-        PhisRiT = T.dot(Phis, Ri.T)
         std_pred = sig_n*(1+(Ri.dot(Phis.T)**2).sum(0).T)**0.5
-        pred_input = [Xs, hyper, Ri, alpha, Phi]
-        pred_input_name = ['Xs', 'hyper', 'Ri', 'alpha', 'Phi']
+        pred_input = [Xs, hyper, Ri, alpha]
+        pred_input_name = ['Xs', 'hyper', 'Ri', 'alpha']
         pred_output = [mu_pred, std_pred]
         pred_output_name = ['mu_pred', 'std_pred']
         self.pred_func = theano.function(
@@ -120,23 +123,25 @@ class SCFGP(object):
 
     def init_model(self):
         best_hyper, min_cost = None, np.inf
-        for _ in range(50):
+        for _ in range(20):
             a_and_b = np.random.randn(2)
+            kp = np.random.rand(2*self.R)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_and_b, l, f, theta))
-            Ri, alpha, Phi, mu_f, cost, _ = self.train_func(self.X, self.y, hyper)
+            hyper = np.concatenate((a_and_b, kp, l, f, theta))
+            Ri, alpha, Omega, mu_f, cost, _ =\
+                self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
         self.hyper = best_hyper.copy()
-        self.Ri, self.alpha, self.Phi, self.mu_f, self.cost, _ = self.train_func(
-            self.X, self.y, self.hyper)
+        self.Ri, self.alpha, self.Omega, self.mu_f, self.cost, _ =\
+            self.train_func(self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
-        plot_training=False, plot_1d_function=False):
+        plot_matrices=False, plot_training=False, plot_1d_function=False):
         self.X_nml.fit(X)
         self.y_nml.fit(y)
         self.X = self.X_nml.forward_transform(X)
@@ -152,8 +157,11 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [1e-1/self.R, 0.9, 0.9], 500, 30, 1e-4)
-        plt.close()
+            opt = Optimizer("smorms3", [1e-1/(self.R**2)], self.R*100, 24, 1e-3)
+        if(plot_matrices):
+            plot_mat_fig = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
+            plot_mat_ax = plot_mat_fig.add_subplot(111)
+            plot_mat_ax.set_title('Omega')
         if(plot_training):
             iter_list = []
             cost_list = []
@@ -164,10 +172,14 @@ class SCFGP(object):
             plot_train_fig.suptitle(self.NAME, fontsize=15)
             plt.xlabel('# iteration', fontsize=13)
         if(plot_1d_function):
-            plot_1d_fig = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
+            plot_1d_fig = plt.figure(facecolor='white', dpi=120)
             plot_1d_fig.suptitle(self.NAME, fontsize=15)
             plot_1d_ax = plot_1d_fig.add_subplot(111)
+            plot_1d_ax.set_title('Omega')
         def animate(i):
+            if(plot_matrices):
+                plot_mat_ax.cla()
+                plot_mat_ax.imshow(self.Omega, origin='lower')
             if(plot_training):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
@@ -196,7 +208,7 @@ class SCFGP(object):
                 errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
                 Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
                 mu, std = self.pred_func(
-                    Xplot, self.hyper, self.Ri, self.alpha, self.Phi)
+                    Xplot, self.hyper, self.Ri, self.alpha)
                 mu = mu.ravel()
                 std = std.ravel()
                 for er in errors:
@@ -213,7 +225,7 @@ class SCFGP(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.Ri, self.alpha, self.Phi, mu_f, self.TrCost, dhyper =\
+            self.Ri, self.alpha, self.Omega, mu_f, self.TrCost, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
@@ -228,6 +240,8 @@ class SCFGP(object):
                 callback()
             if(iter == -1):
                 return
+            if(plot_matrices):
+                plt.pause(0.1)
             if(plot_training):
                 iter_list.append(iter)
                 cost_list.append(self.TrCost)
@@ -237,6 +251,8 @@ class SCFGP(object):
             if(plot_1d_function):
                 plt.pause(0.05)
             return self.TrCost, self.TrNMSE, dhyper
+        if(plot_matrices):
+            ani = anm.FuncAnimation(plot_mat_fig, animate, interval=500)
         if(plot_training):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d_function):
@@ -248,7 +264,7 @@ class SCFGP(object):
     def predict(self, Xs, ys=None):
         self.Xs = self.X_nml.forward_transform(Xs)
         mu_pred, std_pred = self.pred_func(
-            self.Xs, self.hyper, self.Ri, self.alpha, self.Phi)
+            self.Xs, self.hyper, self.Ri, self.alpha)
         self.mu_pred = self.y_nml.backward_transform(mu_pred)
         self.std_pred = std_pred[:, None]*self.y_nml.data["std"]
         if(ys is not None):

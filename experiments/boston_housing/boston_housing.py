@@ -28,8 +28,8 @@ def load_boston_data(proportion=106./506):
 
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
-feature_size_choices = [int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(10)]
-rank_choices = [2, 4, 6]
+feature_size_choices = reversed([int(np.log(X_train.shape[0])/np.log(8)+1)*(i+1) for i in range(2)])
+rank_choices = [5, 10]
 num_models = len(rank_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
@@ -92,6 +92,7 @@ for feature_size in feature_size_choices:
 import os
 if not os.path.exists('plots'):
     os.mkdir('plots')
+labels = ["Rank = "+str(rank) for rank in rank_choices]
 for en, (metric_name, metric_results) in metrics.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
@@ -111,5 +112,5 @@ for en, (metric_name, metric_results) in metrics.items():
     plt.title(metric_name, fontsize=20)
     plt.xlabel('# Fourier features', fontsize=13)
     plt.ylabel(en, fontsize=13)
-    legend = f.legend(handles=lines, labels=model_types, loc=1, shadow=True)
+    legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
     plt.savefig('plots/'+en.lower()+'.png')
