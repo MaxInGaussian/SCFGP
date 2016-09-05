@@ -97,7 +97,7 @@ model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 P.S. SCFGP's performance refers to this model:
 ```python
 boston_housing_best_model = SCFGP()
-boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_model.pkl")
+boston_housing_best_model.load("experiments/boston_housing/best_model.pkl")
 ```
 
 ## Predict Age of Abalone
@@ -109,7 +109,7 @@ boston_housing_best_model.load("experiments/boston_housing/boston_housing_best_m
 P.S. SCFGP's performance refers to this model:
 ```python
 abalone_best_model = SCFGP()
-abalone_best_model.load("experiments/abalone/abalone_best_model.pkl")
+abalone_best_model.load("experiments/abalone/best_model.pkl")
 ```
 
 ## Predict Kinematics of 8-link Robot Arm
@@ -121,37 +121,37 @@ abalone_best_model.load("experiments/abalone/abalone_best_model.pkl")
 P.S. SCFGP's performance refers to this model:
 ```python
 kin8nm_best_model = SCFGP()
-kin8nm_best_model.load("experiments/kin8nm/kin8nm_best_model.pkl")
+kin8nm_best_model.load("experiments/kin8nm/best_model.pkl")
 ```
 
 # Performance of SCFGP v.s. Number of Fourier features
 <h2 align="center">
 Bostion Housing
 </h2>
-![BostonHousingMAE](experiments/boston_housing/full_rank_plots/mae.png?raw=true "Boston Housing MAE")
-![BostonHousingMSE](experiments/boston_housing/full_rank_plots/mse.png?raw=true "Boston Housing MSE")
-![BostonHousingRMSE](experiments/boston_housing/full_rank_plots/rmse.png?raw=true "Boston Housing RMAE")
-![BostonHousingNMSE](experiments/boston_housing/full_rank_plots/nmse.png?raw=true "Boston Housing NMSE")
-![BostonHousingMNLP](experiments/boston_housing/full_rank_plots/mnlp.png?raw=true "Boston Housing MNLP")
-![BostonHousingTime](experiments/boston_housing/full_rank_plots/time.png?raw=true "Boston Housing Time")
+![BostonHousingMAE](experiments/boston_housing/plots/mae.png?raw=true "Boston Housing MAE")
+![BostonHousingMSE](experiments/boston_housing/plots/mse.png?raw=true "Boston Housing MSE")
+![BostonHousingRMSE](experiments/boston_housing/plots/rmse.png?raw=true "Boston Housing RMAE")
+![BostonHousingNMSE](experiments/boston_housing/plots/nmse.png?raw=true "Boston Housing NMSE")
+![BostonHousingMNLP](experiments/boston_housing/plots/mnlp.png?raw=true "Boston Housing MNLP")
+![BostonHousingTime](experiments/boston_housing/plots/time.png?raw=true "Boston Housing Time")
 <h2 align="center">
 Abalone
 </h2>
-![AbaloneMAE](experiments/abalone/full_rank_plots/mae.png?raw=true "Abalone MAE")
-![AbaloneMSE](experiments/abalone/full_rank_plots/mse.png?raw=true "Abalone MSE")
-![AbaloneRMSE](experiments/abalone/full_rank_plots/rmse.png?raw=true "Abalone RMAE")
-![AbaloneNMSE](experiments/abalone/full_rank_plots/nmse.png?raw=true "Abalone NMSE")
-![AbaloneMNLP](experiments/abalone/full_rank_plots/mnlp.png?raw=true "Abalone MNLP")
-![AbaloneTime](experiments/abalone/full_rank_plots/time.png?raw=true "Abalone Time")
+![AbaloneMAE](experiments/abalone/plots/mae.png?raw=true "Abalone MAE")
+![AbaloneMSE](experiments/abalone/plots/mse.png?raw=true "Abalone MSE")
+![AbaloneRMSE](experiments/abalone/plots/rmse.png?raw=true "Abalone RMAE")
+![AbaloneNMSE](experiments/abalone/plots/nmse.png?raw=true "Abalone NMSE")
+![AbaloneMNLP](experiments/abalone/plots/mnlp.png?raw=true "Abalone MNLP")
+![AbaloneTime](experiments/abalone/plots/time.png?raw=true "Abalone Time")
 <h2 align="center">
 Kin8nm
 </h2>
-![Kin8nmMAE](experiments/kin8nm/low_rank_plots/mae.png?raw=true "Kin8nm MAE")
-![Kin8nmMSE](experiments/kin8nm/low_rank_plots/mse.png?raw=true "Kin8nm MSE")
-![Kin8nmRMSE](experiments/kin8nm/low_rank_plots/rmse.png?raw=true "Kin8nm RMAE")
-![Kin8nmNMSE](experiments/kin8nm/low_rank_plots/nmse.png?raw=true "Kin8nm NMSE")
-![Kin8nmMNLP](experiments/kin8nm/low_rank_plots/mnlp.png?raw=true "Kin8nm MNLP")
-![Kin8nmTime](experiments/kin8nm/low_rank_plots/time.png?raw=true "Kin8nm Time")
+![Kin8nmMAE](experiments/kin8nm/plots/mae.png?raw=true "Kin8nm MAE")
+![Kin8nmMSE](experiments/kin8nm/plots/mse.png?raw=true "Kin8nm MSE")
+![Kin8nmRMSE](experiments/kin8nm/plots/rmse.png?raw=true "Kin8nm RMAE")
+![Kin8nmNMSE](experiments/kin8nm/plots/nmse.png?raw=true "Kin8nm NMSE")
+![Kin8nmMNLP](experiments/kin8nm/plots/mnlp.png?raw=true "Kin8nm MNLP")
+![Kin8nmTime](experiments/kin8nm/plots/time.png?raw=true "Kin8nm Time")
 <h3 align="center">
 Training time of SCFGP is not quite sensitive to the size of training data.<br>
 On the contrary, it is to a large extent dependent on the number of Fourier features.
