@@ -29,7 +29,7 @@ def load_boston_data(proportion=106./506):
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
 feature_size_choices = [int(np.log(
-    X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(5)]
+    X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(8)]
 rank_choices = [2*(i+1) for i in range(5)]
 num_models = len(rank_choices)
 metrics = {
@@ -38,7 +38,7 @@ metrics = {
     "RMSE": ["Root Mean Square Error", [[] for _ in range(num_models)]],
     "NMSE": ["Normalized Mean Square Error", [[] for _ in range(num_models)]],
     "MNLP": ["Mean Negative Log Probability", [[] for _ in range(num_models)]],
-    "TIME": ["Training Time", [[] for _ in range(num_models)]],
+    "TIME(s)": ["Training Time", [[] for _ in range(num_models)]],
 }
 try:
     best_model = SCFGP(verbose=False)
@@ -71,7 +71,7 @@ for feature_size in feature_size_choices:
             results["RMSE"].append(model.TsRMSE)
             results["NMSE"].append(model.TsNMSE)
             results["MNLP"].append(model.TsMNLP)
-            results["TIME"].append(model.TrTime)
+            results["TIME(s)"].append(model.TrTime)
             print("\n>>>", model.NAME)
             print("    Model Selection Score\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.SCORE, "  ", best_model.SCORE))
@@ -93,7 +93,7 @@ for feature_size in feature_size_choices:
 import os
 if not os.path.exists('plots'):
     os.mkdir('plots')
-labels = ["Rank = "+str(rank) for rank in rank_choices]
+labels = ["Rank="+str(rank) for rank in rank_choices]
 for en, (metric_name, metric_results) in metrics.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
@@ -110,7 +110,7 @@ for en, (metric_name, metric_results) in metrics.items():
         lines.append(line)
     ax.set_xlim([min(feature_size_choices)-10, max(feature_size_choices)+10])
     ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
-    plt.title(metric_name, fontsize=20)
+    plt.title(metric_name, fontsize=18)
     plt.xlabel('# Fourier features', fontsize=13)
     plt.ylabel(en, fontsize=13)
     legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
