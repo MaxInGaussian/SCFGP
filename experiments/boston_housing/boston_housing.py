@@ -30,7 +30,7 @@ trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
 feature_size_choices = [int(np.log(
     X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(8)]
-rank_choices = [2*(i+1) for i in range(5)]
+rank_choices = [2*(i+1) for i in range(3)]
 num_models = len(rank_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
@@ -105,8 +105,8 @@ for en, (metric_name, metric_results) in metrics.items():
             minv = min(minv, metric_results[j][i][0])
             ax.text(feature_size_choices[i], metric_results[j][i][0], '%.2f' % (
                 metric_results[j][i][0]), fontsize=5)
-        line = ax.errorbar(feature_size_choices,
-            [metric_results[j][i][0] for i in range(len(feature_size_choices))], fmt='-o')
+        line = ax.errorbar(feature_size_choices, [metric_results[
+            j][i][0] for i in range(len(feature_size_choices))], fmt='-o')
         lines.append(line)
     ax.set_xlim([min(feature_size_choices)-10, max(feature_size_choices)+10])
     ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
