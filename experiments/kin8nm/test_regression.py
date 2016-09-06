@@ -15,20 +15,20 @@ except:
     from SCFGP import *
     print("done.")
 
-def load_boston_data(proportion=106./506):
+def load_kin8nm_data(proportion=3192./8192):
     from sklearn import datasets
     from sklearn import cross_validation
-    boston = datasets.load_boston()
-    X, y = boston.data, boston.target
+    kin8nm = datasets.fetch_mldata('regression-datasets kin8nm')
+    X, y = kin8nm.data[:, :-1], kin8nm.data[:, -1]
     y = y[:, None]
     X = X.astype(np.float64)
     X_train, X_test, y_train, y_test = \
         cross_validation.train_test_split(X, y, test_size=proportion)
     return X_train, y_train, X_test, y_test
 
-repeats = 3
+repeats = 1
 kerns = ["dot", "lin", "rbf", "per"]
-X_train, y_train, X_test, y_test = load_boston_data()
+X_train, y_train, X_test, y_test = load_kin8nm_data()
 rank_choices = [int(X_train.shape[1]/2+1)]
 feature_size_choices = [50]
 scores = [[[] for _ in kerns] for _ in kerns]

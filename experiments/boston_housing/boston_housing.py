@@ -30,8 +30,9 @@ trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
 feature_size_choices = [int(np.log(
     X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(8)]
-rank_choices = [2*(i+1) for i in range(3)]
-num_models = len(rank_choices)
+rank = int(X_train.shape[1]/2+1)
+kern_choices = ['dot', 'wht', 'lin', 'rbf', 'per', 'exp']
+num_models = len(kern_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
     "MSE": ["Mean Square Error", [[] for _ in range(num_models)]],
@@ -47,12 +48,12 @@ try:
 except (FileNotFoundError, IOError):
     best_model = None
 for feature_size in feature_size_choices:
-    for i, rank in enumerate(rank_choices):
+    for i, kern in enumerate(kern_choices):
         funcs = None
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
             X_train, y_train, X_test, y_test = load_boston_data()
-            model = SCFGP(rank, feature_size, verbose=False)
+            model = SCFGP(rank, feature_size, kern, kern, verbose=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
@@ -93,7 +94,7 @@ for feature_size in feature_size_choices:
 import os
 if not os.path.exists('plots'):
     os.mkdir('plots')
-labels = ["Rank="+str(rank) for rank in rank_choices]
+labels = ["Rank="+str(rank) for rank in kern_choices]
 for en, (metric_name, metric_results) in metrics.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
