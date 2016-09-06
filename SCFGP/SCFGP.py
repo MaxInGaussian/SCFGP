@@ -97,11 +97,11 @@ class SCFGP(object):
         t_alpha = T.dot(t_Ri.T, beta)
         mu_f = T.dot(Phi, t_alpha)
         mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
-        sig_w = T.sqrt((T.var(Omega, axis=1)*self.M+\
+        sig_w = ((T.var(Omega, axis=1)*self.M+\
             T.var(L, axis=1)*self.R)/(self.M+self.R))
-        cost = T.log(2*sig2_n*np.pi)+(1./sig2_n*((y**2).sum()-\
-            (beta**2).sum())-(zeta**2).sum()+2*T.log(T.diagonal(R)).sum()-\
-                (sig_w+mu_w**2-T.log(sig_w)-1).sum())/N
+        cost = (T.log(2*sig2_n*np.pi)+(1./sig2_n*((y**2).sum()-\
+            (beta**2).sum())-(zeta**2).sum()+2*T.log(T.diagonal(R)).sum()+\
+                (sig_w+mu_w**2-T.log(sig_w)-1).sum())/N)/T.std(y)
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
@@ -158,7 +158,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05/self.R], self.R*100, 18, 1e-4)
+            opt = Optimizer("smorms3", [0.1/self.R], self.R*100, 18, 1e-4)
         plt.close()
         if(plot_matrices):
             plot_mat_fig = plt.figure(facecolor='white', dpi=120)

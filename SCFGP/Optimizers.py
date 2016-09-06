@@ -13,10 +13,10 @@ class Optimizer(object):
     available_optimizers = ["sgd", "rmsprop", "adam", "smorms3"]
     
     max_iter, max_cvrg_iter, cvrg_tol, ln_params = 0, 0, 0, []
-    stop_by_train_error = True
+    stop_by_train_error = False
     
     def __init__(self, opt, ln_params, max_iter, max_cvrg_iter, cvrg_tol,
-        stop_by_train_error=True):
+        stop_by_train_error=False):
         assert opt.lower() in self.available_optimizers, "Invalid Optimizer!"
         self.opt = opt.lower()
         self.max_iter = max_iter
