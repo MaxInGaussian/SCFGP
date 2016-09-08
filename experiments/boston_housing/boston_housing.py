@@ -46,13 +46,12 @@ try:
 except (FileNotFoundError, IOError):
     best_model = None
 for feature_size in feature_size_choices:
-    rank = int(feature_size**0.5)
     for i, kern in enumerate(kern_choices):
         funcs = None
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
             X_train, y_train, X_test, y_test = load_boston_data()
-            model = SCFGP(rank, feature_size, kern, kern, verbose=False)
+            model = SCFGP(-1, feature_size, kern, kern, verbose=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
@@ -72,7 +71,7 @@ for feature_size in feature_size_choices:
             results["NMSE"].append(model.TsNMSE)
             results["MNLP"].append(model.TsMNLP)
             results["TIME(s)"].append(model.TrTime)
-            print("\n>>>", model.NAME, kern)
+            print("\n>>>", model.NAME, kern, np.mean(results["NMSE"]))
             print("    Model Selection Score\t\t\t= %.4f%s| Best = %.4f"%(
                 model.SCORE, "  ", best_model.SCORE))
             print("    Mean Absolute Error\t\t\t\t= %.4f%s| Best = %.4f"%(

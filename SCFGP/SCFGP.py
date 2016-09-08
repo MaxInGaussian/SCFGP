@@ -35,8 +35,15 @@ class SCFGP(object):
     
     def __init__(self, rank=-1, feature_size=-1,
                  freq_kern="per", iduc_kern="per", verbose=True):
-        self.R = rank
-        self.M = feature_size
+        if(rank == -1 and feature_size != -1):
+            self.M = feature_size
+            self.R = int(feature_size**0.5+1)
+        elif(rank != -1 and feature_size == -1):
+            self.M = int(rank**2+1)
+            self.R = rank
+        else:
+            self.M = feature_size
+            self.R = rank
         self.freq_kern = FrequencyKernel(freq_kern, self.R)
         self.FKP = self.freq_kern.params_size
         self.iduc_kern = FrequencyKernel(iduc_kern, self.R)

@@ -72,21 +72,21 @@ class FrequencyKernel(object):
     def radial_basis_function_kernel(self, X, Y):
         length_scale = self.params_vec[None, None, :]
         X_3d, Y_3d = X[:, None, :], Y[None, :, :]
-        kern_prod = T.exp(-1./2*((X_3d-Y_3d)/length_scale)**2.)
+        kern_prod = T.exp(-1./2*((X_3d-Y_3d)*length_scale)**2.)
         return T.sum(kern_prod*X_3d*Y_3d, 2)
 
     ### Periodic Kernel
     def periodic_kernel(self, X, Y):
         length_scale = self.params_vec[None, None, :]
         X_3d, Y_3d = X[:, None, :], Y[None, :, :]
-        kern_prod = T.exp(-2*(T.sin(T.sqrt((X_3d-Y_3d)**2.))/length_scale)**2.)
+        kern_prod = T.exp(-2*(T.sin(T.sqrt((X_3d-Y_3d)**2.))*length_scale)**2.)
         return T.sum(kern_prod*X_3d*Y_3d, 2)
 
     ### Exponential Kernel
     def exponential_kernel(self, X, Y):
         length_scale = self.params_vec[None, None, :]
         X_3d, Y_3d = X[:, None, :], Y[None, :, :]
-        kern_prod = T.exp(-1./2*T.sqrt(((X_3d-Y_3d)/length_scale)**2.))
+        kern_prod = T.exp(-1./2*T.sqrt(((X_3d-Y_3d)*length_scale)**2.))
         return T.sum(kern_prod*X_3d*Y_3d, 2)
     
     

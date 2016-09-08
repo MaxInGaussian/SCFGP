@@ -34,7 +34,8 @@ def load_abalone_data(proportion=1044./4177):
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_abalone_data()
 feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)/5.) for i in range(10)]
-num_models = len(rank_choices)
+kern_choices = ['dot', 'wht', 'lin', 'rbf', 'per', 'exp']
+num_models = len(kern_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
     "MSE": ["Mean Square Error", [[] for _ in range(num_models)]],
@@ -54,10 +55,8 @@ for feature_size in feature_size_choices:
         funcs = None
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
-            rank = int(np.log2(X_train.shape[1]+1)+\
-                X_train.shape[1]**0.5*np.random.rand())
             X_train, y_train, X_test, y_test = load_abalone_data()
-            model = SCFGP(rank, feature_size, kern, kern, verbose=False)
+            model = SCFGP(-1, feature_size, kern, kern, verbose=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
@@ -77,7 +76,7 @@ for feature_size in feature_size_choices:
             results["NMSE"].append(model.TsNMSE)
             results["MNLP"].append(model.TsMNLP)
             results["TIME(s)"].append(model.TrTime)
-            print("\n>>>", model.NAME)
+            print("\n>>>", model.NAME, kern, np.mean(results["NMSE"]))
             print("    Model Selection Score\t\t\t= %.4f%s| Best = %.4f"%(
                 model.SCORE, "  ", best_model.SCORE))
             print("    Mean Absolute Error\t\t\t\t= %.4f%s| Best = %.4f"%(
