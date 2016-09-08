@@ -61,6 +61,7 @@ class SCFGP(object):
     
     def build_theano_model(self):
         epsilon = 1e-8
+        kl = lambda mu, sig: sig+mu**2-T.log(sig)
         self.message("Compiling SCFGP theano model...")
         X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
         N, S = X.shape[0], Xs.shape[0]
@@ -96,14 +97,12 @@ class SCFGP(object):
         GTy = T.dot(t_Ri, PhiTy)
         t_alpha = T.dot(t_Ri.T, GTy)
         mu_f = T.dot(Phi, t_alpha)
+        mu_w = T.sum(T.mean(Omega, axis=1))
+        sig_w = T.sum(T.std(Omega, axis=1))
         cost = 2*T.log(T.diagonal(R)).sum()/N+\
             1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+4*(1-self.M/N)*a
-        # mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
-        # sig_w = T.sqrt((T.var(Omega, axis=1)*self.M+\
-        #     T.var(L, axis=1)*self.R)/(self.M+self.R))
-        # cost = (T.log(2*sig2_n*np.pi)+(1./sig2_n*((y**2).sum()-\
-        #     (Ri**2).sum())+2*T.log(T.diagonal(R)).sum()+\
-        #         (sig_w+mu_w**2-T.log(sig_w)-1).sum())/N)**2/T.var(y)
+        penelty = kl(mu_w, sig_w)
+        cost += penelty/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
@@ -162,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [0.1/self.R, 0.9, 0.9], self.R*100, 8, 1e-4)
+            opt = Optimizer("adam", [0.1/self.R, 0.9, 0.9], 500, 18, 1e-3, True)
         plt.close()
         if(plot_matrices):
             plot_mat_fig = plt.figure(facecolor='white', dpi=120)
@@ -171,7 +170,8 @@ class SCFGP(object):
         if(plot_training):
             iter_list = []
             cost_list = []
-            score_list = []
+            train_mse_list = []
+            test_mse_list = []
             plot_train_fig, plot_train_axarr = plt.subplots(
                 2, figsize=(8, 6), facecolor='white', dpi=120)
             plot_train_fig.suptitle(self.NAME, fontsize=15)
@@ -189,16 +189,19 @@ class SCFGP(object):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
                     cost_list.pop(0)
-                    score_list.pop(0)
+                    train_mse_list.pop(0)
+                    test_mse_list.pop(0)
                 plot_train_axarr[0].cla()
                 plot_train_axarr[0].plot(iter_list, cost_list,
-                    color='r', linewidth=2.0, label='Cost')
+                    color='r', linewidth=2.0, label='Training cost')
+                plot_train_axarr[1].cla()
+                plot_train_axarr[1].plot(iter_list, train_mse_list,
+                    color='b', linewidth=2.0, label='Training MSE')
+                plot_train_axarr[1].plot(iter_list, test_mse_list,
+                    color='g', linewidth=2.0, label='Testing MSE')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
-                plot_train_axarr[1].cla()
-                plot_train_axarr[1].plot(iter_list, score_list,
-                    color='b', linewidth=2.0, label='Score')
                 handles, labels = plot_train_axarr[1].get_legend_handles_labels()
                 plot_train_axarr[1].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=2, fancybox=True)
@@ -245,7 +248,8 @@ class SCFGP(object):
             if(plot_training):
                 iter_list.append(iter)
                 cost_list.append(self.COST)
-                score_list.append(self.SCORE)
+                train_mse_list.append(self.TrMSE)
+                test_mse_list.append(self.TsMSE)
                 plt.pause(0.01)
             if(plot_1d_function):
                 plt.pause(0.05)
@@ -274,7 +278,7 @@ class SCFGP(object):
             self.TsNMSE = self.TsMSE/np.var(ys)
             self.TsMNLP = 0.5*np.mean(((ys-self.mu_pred)/\
                 self.std_pred)**2+np.log(2*np.pi*self.std_pred**2))
-            self.SCORE = self.TsNMSE
+            self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
             self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
             self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
             self.message(self.NAME, " TsRMSE = %.4f"%(self.TsRMSE))
