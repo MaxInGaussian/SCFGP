@@ -60,7 +60,7 @@ class SCFGP(object):
         npr.seed(self.seed)
     
     def build_theano_model(self):
-        epsilon = 1e-8
+        epsilon = 1e-5
         kl = lambda mu, sig: sig+mu**2-T.log(sig)
         self.message("Compiling SCFGP theano model...")
         X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')

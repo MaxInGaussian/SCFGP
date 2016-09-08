@@ -33,9 +33,7 @@ def load_abalone_data(proportion=1044./4177):
 
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_abalone_data()
-feature_size_choices = [int(np.log(
-    X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(8)]
-rank_choices = [2*(i+1) for i in range(5)]
+feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)/5.) for i in range(10)]
 num_models = len(rank_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],
@@ -52,12 +50,14 @@ try:
 except (FileNotFoundError, IOError):
     best_model = None
 for feature_size in feature_size_choices:
-    for i, rank in enumerate(rank_choices):
+    for i, kern in enumerate(kern_choices):
         funcs = None
         results = {en:[] for en in metrics.keys()}
         for round in range(trials_per_model):
+            rank = int(np.log2(X_train.shape[1]+1)+\
+                X_train.shape[1]**0.5*np.random.rand())
             X_train, y_train, X_test, y_test = load_abalone_data()
-            model = SCFGP(rank, feature_size, verbose=False)
+            model = SCFGP(rank, feature_size, kern, kern, verbose=False)
             if(funcs is None):
                 model.fit(X_train, y_train, X_test, y_test)
                 funcs = (model.train_func, model.pred_func)
@@ -98,7 +98,6 @@ for feature_size in feature_size_choices:
 import os
 if not os.path.exists('plots'):
     os.mkdir('plots')
-labels = ["Rank="+str(rank) for rank in rank_choices]
 for en, (metric_name, metric_results) in metrics.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
@@ -110,13 +109,13 @@ for en, (metric_name, metric_results) in metrics.items():
             minv = min(minv, metric_results[j][i][0])
             ax.text(feature_size_choices[i], metric_results[j][i][0], '%.2f' % (
                 metric_results[j][i][0]), fontsize=5)
-        line = ax.errorbar(feature_size_choices,
-            [metric_results[j][i][0] for i in range(len(feature_size_choices))], fmt='-o')
+        line = ax.errorbar(feature_size_choices, [metric_results[
+            j][i][0] for i in range(len(feature_size_choices))], fmt='-o')
         lines.append(line)
     ax.set_xlim([min(feature_size_choices)-10, max(feature_size_choices)+10])
     ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
     plt.title(metric_name, fontsize=18)
     plt.xlabel('# Fourier features', fontsize=13)
     plt.ylabel(en, fontsize=13)
-    legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
+    legend = f.legend(handles=lines, labels=kern_choices, loc=1, shadow=True)
     plt.savefig('plots/'+en.lower()+'.png')

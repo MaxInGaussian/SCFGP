@@ -28,9 +28,7 @@ def load_boston_data(proportion=106./506):
 
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
-feature_size_choices = [int(np.log(
-    X_train.shape[0])/np.log(8)+1)*(i+1)*3 for i in range(8)]
-rank = int(X_train.shape[1]/2+1)
+feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)/5.) for i in range(10)]
 kern_choices = ['dot', 'wht', 'lin', 'rbf', 'per', 'exp']
 num_models = len(kern_choices)
 metrics = {
@@ -48,6 +46,7 @@ try:
 except (FileNotFoundError, IOError):
     best_model = None
 for feature_size in feature_size_choices:
+    rank = int(feature_size**0.5)
     for i, kern in enumerate(kern_choices):
         funcs = None
         results = {en:[] for en in metrics.keys()}
@@ -73,12 +72,12 @@ for feature_size in feature_size_choices:
             results["NMSE"].append(model.TsNMSE)
             results["MNLP"].append(model.TsMNLP)
             results["TIME(s)"].append(model.TrTime)
-            print("\n>>>", model.NAME)
-            print("    Model Selection Score\t\t\t\t= %.4f%s| Best = %.4f"%(
+            print("\n>>>", model.NAME, kern)
+            print("    Model Selection Score\t\t\t= %.4f%s| Best = %.4f"%(
                 model.SCORE, "  ", best_model.SCORE))
             print("    Mean Absolute Error\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TsMAE, "  ", best_model.TsMAE))
-            print("    Mean Square Error\t\t\t\t\t= %.4f%s| Best = %.4f"%(
+            print("    Mean Square Error\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TsMSE, "  ", best_model.TsMSE))
             print("    Root Mean Square Error\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TsRMSE, "  ", best_model.TsRMSE))
@@ -86,7 +85,7 @@ for feature_size in feature_size_choices:
                 model.TsNMSE, "  ", best_model.TsNMSE))
             print("    Mean Negative Log Probability\t= %.4f%s| Best = %.4f"%(
                 model.TsMNLP, "  ", best_model.TsMNLP))
-            print("    Training Time\t\t\t\t\t\t= %.4f%s| Best = %.4f"%(
+            print("    Training Time\t\t\t\t\t= %.4f%s| Best = %.4f"%(
                 model.TrTime, "  ", best_model.TrTime))
         for en in metrics.keys():
             metrics[en][1][i].append((np.mean(results[en]), np.std(results[en])))
@@ -94,7 +93,6 @@ for feature_size in feature_size_choices:
 import os
 if not os.path.exists('plots'):
     os.mkdir('plots')
-labels = ["Rank="+str(rank) for rank in kern_choices]
 for en, (metric_name, metric_results) in metrics.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
@@ -114,5 +112,5 @@ for en, (metric_name, metric_results) in metrics.items():
     plt.title(metric_name, fontsize=18)
     plt.xlabel('# Fourier features', fontsize=13)
     plt.ylabel(en, fontsize=13)
-    legend = f.legend(handles=lines, labels=labels, loc=1, shadow=True)
+    legend = f.legend(handles=lines, labels=kern_choices, loc=1, shadow=True)
     plt.savefig('plots/'+en.lower()+'.png')

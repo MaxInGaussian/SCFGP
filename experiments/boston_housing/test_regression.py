@@ -27,9 +27,9 @@ def load_boston_data(proportion=106./506):
     return X_train, y_train, X_test, y_test
 
 repeats = 10
-kerns = ['dot', "lin", "rbf", "per"]
-rank_choices = [7]
-feature_size_choices = [50]
+kerns = ["rbf", "per"]
+rank_choices = [4]
+feature_size_choices = [10]
 scores = [[] for _ in kerns]
 nmses = [[] for _ in kerns]
 mnlps = [[] for _ in kerns]
