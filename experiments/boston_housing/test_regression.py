@@ -39,7 +39,7 @@ for i, kern1 in enumerate(kerns):
         for rank in rank_choices:
             for feature_size in feature_size_choices:
                 for _ in range(repeats):
-                    model = SCFGP(rank, feature_size, kern1, kern2, True)
+                    model = SCFGP(rank, feature_size, kern1, kern2, False)
                     model.fit(X_train, y_train, X_test, y_test, plot_training=True)
                     nmses[i][j].append(model.TsNMSE)
                     mnlps[i][j].append(model.TsMNLP)

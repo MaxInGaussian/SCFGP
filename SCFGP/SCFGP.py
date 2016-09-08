@@ -100,7 +100,7 @@ class SCFGP(object):
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
         cost = 2*T.log(T.diagonal(R)).sum()/N+\
-            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())
+            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+(1-self.M/N)*a
         penelty = kl(mu_w, sig_w)
         cost += penelty/N
         dhyper = T.grad(cost, hyper)
@@ -161,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [0.1/self.R, 0.9, 0.9], 500, 18, 1e-3, True)
+            opt = Optimizer("adam", [0.1/self.R, 0.9, 0.9], 500, 30, 1e-3, True)
         plt.close()
         if(plot_matrices):
             plot_mat_fig = plt.figure(facecolor='white', dpi=120)
