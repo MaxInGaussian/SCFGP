@@ -39,7 +39,7 @@ for i, kern in enumerate(kerns):
             for _ in range(repeats):
                 X_train, y_train, X_test, y_test = load_kin8nm_data()
                 model = SCFGP(rank, feature_size, kern, kern, False)
-                model.fit(X_train, y_train, X_test, y_test)
+                model.fit(X_train, y_train, X_test, y_test, plot_training=True)
                 nmses[i].append(model.TsNMSE)
                 mnlps[i].append(model.TsMNLP)
                 scores[i].append(model.SCORE)

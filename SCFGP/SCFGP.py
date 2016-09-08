@@ -106,8 +106,8 @@ class SCFGP(object):
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [t_alpha, t_Ri, Omega, mu_f, cost, dhyper]
-        train_output_name = ['alpha', 'Ri', 'Omega', 'mu_f', 'cost', 'dhyper']
+        train_output = [t_alpha, t_Ri, mu_f, cost, dhyper]
+        train_output_name = ['alpha', 'Ri', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
         FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
