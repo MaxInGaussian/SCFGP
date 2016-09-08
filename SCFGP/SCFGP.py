@@ -161,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [0.1/self.R, 0.9, 0.9], 500, 30, 1e-3, True)
+            opt = Optimizer("adam", [0.01/self.R, 0.9, 0.9], 500, 8, 1e-4, True)
         plt.close()
         if(plot_matrices):
             plot_mat_fig = plt.figure(facecolor='white', dpi=120)
