@@ -88,14 +88,14 @@ class SCFGP(object):
         FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
         FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
         Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
+        PhiTy = T.dot(Phi.T, y)
         PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
         t_Ri = sT.matrix_inverse(R)
-        PhiTy = T.dot(Phi.T, y)
-        G = T.dot(Phi, t_Ri.T)
+        GTy = T.dot(t_Ri, PhiTy)
+        t_alpha = T.dot(t_Ri.T, GTy)
         mu_f = T.dot(Phi, t_alpha)
-        GTy = T.dot(G.T, y)
         cost = 2*T.log(T.diagonal(R)).sum()/N+\
             1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+4*(1-self.M/N)*a
         # mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
