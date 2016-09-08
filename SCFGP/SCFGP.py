@@ -62,7 +62,7 @@ class SCFGP(object):
     def build_theano_model(self):
         epsilon = 1e-8
         self.message("Compiling SCFGP theano model...")
-        X, y, Xs, alpha, beta = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'beta')
+        X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
         N, S = X.shape[0], Xs.shape[0]
         hyper = T.dvector('hyper')
         t_ind = 0
@@ -91,37 +91,33 @@ class SCFGP(object):
         PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
-        Ri = sT.matrix_inverse(R)
-        G = T.dot(Phi, Ri.T)
-        Ki = 1./sig2_n*(T.eye(N)-T.dot(G, G.T))
-        PhiTKi = T.dot(Phi.T, Ki)
-        t_alpha = T.dot(PhiTKi, y)
-        t_beta = T.identity_like(PhiTPhi)-T.dot(PhiTKi, Phi)
+        t_Ri = sT.matrix_inverse(R)
+        PhiTy = T.dot(Phi.T, y)
+        G = T.dot(Phi, t_Ri.T)
         mu_f = T.dot(Phi, t_alpha)
         GTy = T.dot(G.T, y)
-        mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
-        sig_w = T.sqrt((T.var(Omega, axis=1)*self.M+\
-            T.var(L, axis=1)*self.R)/(self.M+self.R))
         cost = 2*T.log(T.diagonal(R)).sum()/N+\
             1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+4*(1-self.M/N)*a
+        # mu_w = (T.sum(Omega, axis=1)+T.sum(L, axis=1))/(self.M+self.R)
+        # sig_w = T.sqrt((T.var(Omega, axis=1)*self.M+\
+        #     T.var(L, axis=1)*self.R)/(self.M+self.R))
         # cost = (T.log(2*sig2_n*np.pi)+(1./sig2_n*((y**2).sum()-\
-        #     (beta**2).sum())+2*T.log(T.diagonal(R)).sum()+\
+        #     (Ri**2).sum())+2*T.log(T.diagonal(R)).sum()+\
         #         (sig_w+mu_w**2-T.log(sig_w)-1).sum())/N)**2/T.var(y)
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [t_alpha, t_beta, Omega, mu_f, cost, dhyper]
-        train_output_name = ['alpha', 'beta', 'Omega', 'mu_f', 'cost', 'dhyper']
+        train_output = [t_alpha, t_Ri, Omega, mu_f, cost, dhyper]
+        train_output_name = ['alpha', 'Ri', 'Omega', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
         FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
         FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
         Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
         mu_pred = T.dot(Phis, alpha)
-        std_pred = T.sqrt(T.diagonal(T.dot(Phis, T.dot(beta, Phis.T))))
-        # std_pred = sig_n*(1+(T.dot(Phis, Ri.T)**2).sum(1))**0.5
-        pred_input = [Xs, hyper, alpha, beta]
-        pred_input_name = ['Xs', 'hyper', 'alpha', 'beta']
+        std_pred = sig_n*(T.dot(Phis, Ri.T)**2).sum(1)**0.5
+        pred_input = [Xs, hyper, alpha, Ri]
+        pred_input_name = ['Xs', 'hyper', 'alpha', 'Ri']
         pred_output = [mu_pred, std_pred]
         pred_output_name = ['mu_pred', 'std_pred']
         self.pred_func = theano.function(
@@ -137,14 +133,14 @@ class SCFGP(object):
             kps = np.random.rand(self.FKP+self.IKP)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
             hyper = np.concatenate((a_and_b, l, f, kps, theta))
-            alpha, beta, Omega, mu_f, cost, _ =\
+            alpha, Ri, Omega, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
         self.hyper = best_hyper.copy()
-        self.alpha, self.beta, self.Omega, self.mu_f, self.cost, _ =\
+        self.alpha, self.Ri, self.Omega, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
@@ -212,7 +208,7 @@ class SCFGP(object):
                 errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
                 Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
                 mu, std = self.pred_func(
-                    Xplot, self.hyper, self.alpha, self.beta)
+                    Xplot, self.hyper, self.alpha, self.Ri)
                 mu = mu.ravel()
                 std = std.ravel()
                 for er in errors:
@@ -229,7 +225,7 @@ class SCFGP(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.alpha, self.beta, self.Omega, mu_f, self.COST, dhyper =\
+            self.alpha, self.Ri, self.Omega, mu_f, self.COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
@@ -267,7 +263,7 @@ class SCFGP(object):
     def predict(self, Xs, ys=None):
         self.Xs = self.X_nml.forward_transform(Xs)
         mu_pred, std_pred = self.pred_func(
-            self.Xs, self.hyper, self.alpha, self.beta)
+            self.Xs, self.hyper, self.alpha, self.Ri)
         self.mu_pred = self.y_nml.backward_transform(mu_pred)
         self.std_pred = std_pred[:, None]*self.y_nml.data["std"]
         if(ys is not None):
@@ -292,7 +288,7 @@ class SCFGP(object):
         prior_setting = (self.seed, self.R, self.M)
         init_objects = (self.freq_kern, self.iduc_kern, self.X_nml, self.y_nml)
         train_data = (self.X, self.y)
-        matrices = (self.hyper, self.alpha, self.beta)
+        matrices = (self.hyper, self.alpha, self.Ri)
         metrics = (self.SCORE, self.COST, self.TrMSE, self.TrNMSE, self.TrTime, 
             self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE, self.TsMNLP)
         save_pack = [prior_setting, init_objects, train_data, matrices, metrics]
@@ -312,7 +308,7 @@ class SCFGP(object):
         self.X, self.y = load_pack[2]
         self.N, self.D = self.X.shape
         self.build_theano_model()
-        self.hyper, self.alpha, self.beta = load_pack[3]
+        self.hyper, self.alpha, self.Ri = load_pack[3]
         [self.SCORE, self.COST, self.TrMSE, self.TrNMSE,
             self.TrTime, self.TsMAE, self.TsMSE, self.TsRMSE,
                 self.TsNMSE, self.TsMNLP] = load_pack[4]
