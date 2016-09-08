@@ -100,7 +100,7 @@ class SCFGP(object):
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
         cost = 2*T.log(T.diagonal(R)).sum()/N+\
-            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+4*(1-self.M/N)*a
+            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())
         penelty = kl(mu_w, sig_w)
         cost += penelty/N
         dhyper = T.grad(cost, hyper)
