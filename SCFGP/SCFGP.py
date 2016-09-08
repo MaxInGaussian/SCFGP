@@ -34,7 +34,7 @@ class SCFGP(object):
     SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
     def __init__(self, rank=-1, feature_size=-1,
-                 freq_kern="rbf", iduc_kern="per", verbose=True):
+                 freq_kern="per", iduc_kern="per", verbose=True):
         self.R = rank
         self.M = feature_size
         self.freq_kern = FrequencyKernel(freq_kern, self.R)
@@ -161,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [0.01/self.R, 0.9, 0.9], 500, 8, 1e-4, True)
+            opt = Optimizer("adam", [0.005, 0.7, 0.99], 1000, 18, 1e-4, True)
         plt.close()
         if(plot_training):
             iter_list = []
