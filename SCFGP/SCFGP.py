@@ -115,7 +115,7 @@ class SCFGP(object):
         FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
         Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
         mu_pred = T.dot(Phis, alpha)
-        std_pred = sig_n*(T.dot(Phis, Ri.T)**2).sum(1)**0.5
+        std_pred = sig_n*(1+(T.dot(Phis, Ri.T)**2).sum(1))**0.5
         pred_input = [Xs, hyper, alpha, Ri]
         pred_input_name = ['Xs', 'hyper', 'alpha', 'Ri']
         pred_output = [mu_pred, std_pred]
