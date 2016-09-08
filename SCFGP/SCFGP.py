@@ -132,18 +132,18 @@ class SCFGP(object):
             kps = np.random.rand(self.FKP+self.IKP)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
             hyper = np.concatenate((a_and_b, l, f, kps, theta))
-            alpha, Ri, Omega, mu_f, cost, _ =\
+            alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
         self.hyper = best_hyper.copy()
-        self.alpha, self.Ri, self.Omega, self.mu_f, self.cost, _ =\
+        self.alpha, self.Ri, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
-        plot_matrices=False, plot_training=False, plot_1d_function=False):
+        plot_training=False, plot_1d_function=False):
         self.X_nml.fit(X)
         self.y_nml.fit(y)
         self.X = self.X_nml.forward_transform(X)
@@ -163,15 +163,11 @@ class SCFGP(object):
         if(opt is None):
             opt = Optimizer("adam", [0.01/self.R, 0.9, 0.9], 500, 8, 1e-4, True)
         plt.close()
-        if(plot_matrices):
-            plot_mat_fig = plt.figure(facecolor='white', dpi=120)
-            plot_mat_ax = plot_mat_fig.add_subplot(111)
-            plot_mat_ax.set_title('Omega')
         if(plot_training):
             iter_list = []
             cost_list = []
-            train_mse_list = []
-            test_mse_list = []
+            train_nmse_list = []
+            test_nmse_list = []
             plot_train_fig, plot_train_axarr = plt.subplots(
                 2, figsize=(8, 6), facecolor='white', dpi=120)
             plot_train_fig.suptitle(self.NAME, fontsize=15)
@@ -180,25 +176,21 @@ class SCFGP(object):
             plot_1d_fig = plt.figure(facecolor='white', dpi=120)
             plot_1d_fig.suptitle(self.NAME, fontsize=15)
             plot_1d_ax = plot_1d_fig.add_subplot(111)
-            plot_1d_ax.set_title('Omega')
         def animate(i):
-            if(plot_matrices):
-                plot_mat_ax.cla()
-                plot_mat_ax.imshow(self.Omega, origin='lower')
             if(plot_training):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
                     cost_list.pop(0)
-                    train_mse_list.pop(0)
-                    test_mse_list.pop(0)
+                    train_nmse_list.pop(0)
+                    test_nmse_list.pop(0)
                 plot_train_axarr[0].cla()
                 plot_train_axarr[0].plot(iter_list, cost_list,
                     color='r', linewidth=2.0, label='Training cost')
                 plot_train_axarr[1].cla()
-                plot_train_axarr[1].plot(iter_list, train_mse_list,
-                    color='b', linewidth=2.0, label='Training MSE')
-                plot_train_axarr[1].plot(iter_list, test_mse_list,
-                    color='g', linewidth=2.0, label='Testing MSE')
+                plot_train_axarr[1].plot(iter_list, train_nmse_list,
+                    color='b', linewidth=2.0, label='Training NMSE')
+                plot_train_axarr[1].plot(iter_list, test_nmse_list,
+                    color='g', linewidth=2.0, label='Testing NMSE')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
@@ -228,7 +220,7 @@ class SCFGP(object):
         def train(iter, hyper):
             self.iter = iter
             self.hyper = hyper.copy()
-            self.alpha, self.Ri, self.Omega, mu_f, self.COST, dhyper =\
+            self.alpha, self.Ri, mu_f, self.COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
@@ -243,19 +235,15 @@ class SCFGP(object):
                 callback()
             if(iter == -1):
                 return
-            if(plot_matrices):
-                plt.pause(0.1)
             if(plot_training):
                 iter_list.append(iter)
                 cost_list.append(self.COST)
-                train_mse_list.append(self.TrMSE)
-                test_mse_list.append(self.TsMSE)
+                train_nmse_list.append(self.TrNMSE)
+                test_nmse_list.append(self.TsNMSE)
                 plt.pause(0.01)
             if(plot_1d_function):
                 plt.pause(0.05)
             return self.COST, self.TrNMSE, dhyper
-        if(plot_matrices):
-            ani = anm.FuncAnimation(plot_mat_fig, animate, interval=500)
         if(plot_training):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d_function):
