@@ -31,27 +31,25 @@ def load_abalone_data(proportion=1044./4177):
         cross_validation.train_test_split(X, y, test_size=proportion)
     return X_train, y_train, X_test, y_test
 
-repeats = 10
-kerns = ['dot', "lin", "rbf", "per"]
-rank_choices = [7]
-feature_size_choices = [50]
+repeats = 3
+kerns = ["rbf", "per"]
+feature_size_choices = [20]
 scores = [[] for _ in kerns]
 nmses = [[] for _ in kerns]
 mnlps = [[] for _ in kerns]
+X_train, y_train, X_test, y_test = load_abalone_data()
 for i, kern in enumerate(kerns):
-    for rank in rank_choices:
-        for feature_size in feature_size_choices:
-            for _ in range(repeats):
-                X_train, y_train, X_test, y_test = load_abalone_data()
-                model = SCFGP(rank, feature_size, kern, kern, False)
-                model.fit(X_train, y_train, X_test, y_test)#, plot_training=True)
-                nmses[i].append(model.TsNMSE)
-                mnlps[i].append(model.TsMNLP)
-                scores[i].append(model.SCORE)
-                print("\n>>>", model.NAME, kern)
-                print("    NMSE = %.4f | Avg = %.4f | Std = %.4f"%(
-                    model.TsNMSE, np.mean(nmses[i]), np.std(nmses[i])))
-                print("    MNLP = %.4f | Avg = %.4f | Std = %.4f"%(
-                    model.TsMNLP, np.mean(mnlps[i]), np.std(mnlps[i])))
-                print("    Score = %.4f | Avg = %.4f | Std = %.4f"%(
-                    model.SCORE, np.mean(scores[i]), np.std(scores[i])))
+    for feature_size in feature_size_choices:
+        for _ in range(repeats):
+            model = SCFGP(-1, feature_size, kern, kern, False)
+            model.fit(X_train, y_train, X_test, y_test, plot_training=True)
+            nmses[i].append(model.TsNMSE)
+            mnlps[i].append(model.TsMNLP)
+            scores[i].append(model.SCORE)
+            print("\n>>>", model.NAME, kern)
+            print("    NMSE = %.4f | Avg = %.4f | Std = %.4f"%(
+                model.TsNMSE, np.mean(nmses[i]), np.std(nmses[i])))
+            print("    MNLP = %.4f | Avg = %.4f | Std = %.4f"%(
+                model.TsMNLP, np.mean(mnlps[i]), np.std(mnlps[i])))
+            print("    Score = %.4f | Avg = %.4f | Std = %.4f"%(
+                model.SCORE, np.mean(scores[i]), np.std(scores[i])))

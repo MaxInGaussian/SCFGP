@@ -31,10 +31,10 @@ def load_abalone_data(proportion=1044./4177):
         cross_validation.train_test_split(X, y, test_size=proportion)
     return X_train, y_train, X_test, y_test
 
-trials_per_model = 50
+trials_per_model = 30
 X_train, y_train, X_test, y_test = load_abalone_data()
 feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)/5.) for i in range(10)]
-kern_choices = ['dot', 'wht', 'lin', 'rbf', 'per', 'exp']
+kern_choices = ['dot', 'rbf', 'per', 'exp']
 num_models = len(kern_choices)
 metrics = {
     "MAE": ["Mean Absolute Error", [[] for _ in range(num_models)]],

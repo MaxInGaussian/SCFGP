@@ -34,7 +34,7 @@ class SCFGP(object):
     SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
     def __init__(self, rank=-1, feature_size=-1,
-                 freq_kern="per", iduc_kern="per", verbose=True):
+                 freq_kern="exp", iduc_kern="exp", verbose=True):
         if(rank == -1 and feature_size != -1):
             self.M = feature_size
             self.R = int(feature_size**0.5+1)
@@ -67,8 +67,9 @@ class SCFGP(object):
         npr.seed(self.seed)
     
     def build_theano_model(self):
-        epsilon = 1e-5
+        epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-T.log(sig)
+        sigmoid = lambda z: 1./(T.exp(-z)+1)
         self.message("Compiling SCFGP theano model...")
         X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
         N, S = X.shape[0], Xs.shape[0]
@@ -76,26 +77,23 @@ class SCFGP(object):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
+        c = hyper[2];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
-        Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
+        ZL = T.reshape(l[:self.D*self.R], (self.D, self.R))
         f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
         F = T.reshape(f[:self.M*self.R], (self.M, self.R))
-        Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
+        ZF = T.reshape(f[self.M*self.R:], (self.M, self.R))
         fkp = hyper[t_ind:t_ind+self.FKP];t_ind+=self.FKP
         self.freq_kern.set_params(fkp)
-        Omega = self.freq_kern.fit(L, F)
+        Omega = sigmoid(self.freq_kern.fit(L, F))
         ikp = hyper[t_ind:t_ind+self.IKP];t_ind+=self.IKP
         self.iduc_kern.set_params(ikp)
-        Z = self.iduc_kern.fit(Z_L, Z_F)
-        theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
-        Theta = T.reshape(theta[:self.M], (1, self.M))
-        Theta_L = T.reshape(theta[self.M:], (1, self.R))
-        FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
+        Z = T.tanh(self.iduc_kern.fit(ZL, ZF))
+        FF = T.dot(X, Omega)+(c-T.sum(Z*Omega, 0))[None, :]
+        Phi = T.sqrt(2./self.M)*sig_f*T.cos(2*np.pi*FF)
         PhiTy = T.dot(Phi.T, y)
         PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
@@ -107,7 +105,7 @@ class SCFGP(object):
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
         cost = 2*T.log(T.diagonal(R)).sum()/N+\
-            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+(1-self.M/N)*a
+            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+2*(1-self.M/N)*a
         penelty = kl(mu_w, sig_w)
         cost += penelty/N
         dhyper = T.grad(cost, hyper)
@@ -117,11 +115,10 @@ class SCFGP(object):
         train_output_name = ['alpha', 'Ri', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(
             train_input, train_output, on_unused_input='ignore')
-        FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
+        FFs = T.dot(Xs, Omega)+(c-T.sum(Z*Omega, 0))[None, :]
+        Phis = T.sqrt(2./self.M)*sig_f*T.cos(2*np.pi*FFs)
         mu_pred = T.dot(Phis, alpha)
-        std_pred = sig_n*(1+(T.dot(Phis, Ri.T)**2).sum(1))**0.5
+        std_pred = sig_n+(T.dot(Phis, Ri.T)**2).sum(1)**0.5
         pred_input = [Xs, hyper, alpha, Ri]
         pred_input_name = ['Xs', 'hyper', 'alpha', 'Ri']
         pred_output = [mu_pred, std_pred]
@@ -133,12 +130,11 @@ class SCFGP(object):
     def init_model(self):
         best_hyper, min_cost = None, np.inf
         for _ in range(20):
-            a_and_b = np.random.randn(2)
+            a_b_c = np.random.randn(3)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
             kps = np.random.rand(self.FKP+self.IKP)
-            theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_and_b, l, f, kps, theta))
+            hyper = np.concatenate((a_b_c, l, f, kps))
             alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
@@ -168,7 +164,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [0.005, 0.7, 0.99], 1000, 18, 1e-4, True)
+            opt = Optimizer("adam", [0.05, 0.9, 0.99], 999, 18, 0.1/(self.N**0.8), True)
         plt.close()
         if(plot_training):
             iter_list = []

@@ -66,7 +66,7 @@ class Optimizer(object):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
-            if(cvrg_iter > self.max_cvrg_iter):
+            if(i > self.max_cvrg_iter*10 and cvrg_iter > self.max_cvrg_iter):
                 break
             elif(cvrg_iter > self.max_cvrg_iter*0.5):
                 randp = np.random.rand()
@@ -106,7 +106,7 @@ class Optimizer(object):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
-            if(cvrg_iter > self.max_cvrg_iter):
+            if(i > self.max_cvrg_iter*10 and cvrg_iter > self.max_cvrg_iter):
                 break
             elif(cvrg_iter > self.max_cvrg_iter*0.5):
                 randp = np.random.rand()
@@ -147,7 +147,7 @@ class Optimizer(object):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
-            if(cvrg_iter > self.max_cvrg_iter):
+            if(i > self.max_cvrg_iter*10 and cvrg_iter > self.max_cvrg_iter):
                 break
             elif(cvrg_iter > self.max_cvrg_iter*0.5):
                 randp = np.random.rand()
@@ -193,7 +193,7 @@ class Optimizer(object):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
-            if(cvrg_iter > self.max_cvrg_iter):
+            if(i > self.max_cvrg_iter*10 and cvrg_iter > self.max_cvrg_iter):
                 break
             elif(cvrg_iter > self.max_cvrg_iter*0.5):
                 randp = np.random.rand()
