@@ -28,7 +28,7 @@ def load_boston_data(proportion=106./506):
 
 trials_per_model = 50
 X_train, y_train, X_test, y_test = load_boston_data()
-feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)/5.) for i in range(10)]
+feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)/3.) for i in range(10)]
 metrics = {
     "SCORE": ["Model Selection Score", []],
     "COST": ["Hyperparameter Selection Cost", []],

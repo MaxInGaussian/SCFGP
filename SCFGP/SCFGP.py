@@ -161,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.01], 999, 18, 0.1/(self.N**0.8), True)
+            opt = Optimizer("smorms3", [0.01], 999, 8, 0.1/(self.N**0.8), True)
         plt.close()
         if(plot_training):
             iter_list = []
