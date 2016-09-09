@@ -32,7 +32,7 @@ def load_abalone_data(proportion=1044./4177):
     return X_train, y_train, X_test, y_test
 
 repeats = 3
-kerns = ["rbf", "per"]
+kerns = ["lin", "wht", "dot"]
 feature_size_choices = [20]
 scores = [[] for _ in kerns]
 nmses = [[] for _ in kerns]

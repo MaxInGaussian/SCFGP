@@ -33,8 +33,7 @@ class SCFGP(object):
     X, y, Xs, ys, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*10
     SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
-    def __init__(self, rank=-1, feature_size=-1,
-                 freq_kern="exp", iduc_kern="exp", verbose=True):
+    def __init__(self, rank=-1, feature_size=-1, verbose=True):
         if(rank == -1 and feature_size != -1):
             self.M = feature_size
             self.R = int(feature_size**0.5+1)
@@ -44,10 +43,6 @@ class SCFGP(object):
         else:
             self.M = feature_size
             self.R = rank
-        self.freq_kern = FrequencyKernel(freq_kern, self.R)
-        self.FKP = self.freq_kern.params_size
-        self.iduc_kern = FrequencyKernel(iduc_kern, self.R)
-        self.IKP = self.iduc_kern.params_size
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.verbose = verbose
@@ -69,7 +64,7 @@ class SCFGP(object):
     def build_theano_model(self):
         epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-T.log(sig)
-        sigmoid = lambda z: 1./(T.exp(-z)+1)
+        snorm_cdf = lambda y: .5*(1+T.erf(y/T.sqrt(2+epsilon)+epsilon))
         self.message("Compiling SCFGP theano model...")
         X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
         N, S = X.shape[0], Xs.shape[0]
@@ -77,64 +72,66 @@ class SCFGP(object):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
-        c = hyper[2];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
-        ZL = T.reshape(l[:self.D*self.R], (self.D, self.R))
+        Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
         f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
         F = T.reshape(f[:self.M*self.R], (self.M, self.R))
-        ZF = T.reshape(f[self.M*self.R:], (self.M, self.R))
-        fkp = hyper[t_ind:t_ind+self.FKP];t_ind+=self.FKP
-        self.freq_kern.set_params(fkp)
-        Omega = sigmoid(self.freq_kern.fit(L, F))
-        ikp = hyper[t_ind:t_ind+self.IKP];t_ind+=self.IKP
-        self.iduc_kern.set_params(ikp)
-        Z = T.tanh(self.iduc_kern.fit(ZL, ZF))
-        FF = T.dot(X, Omega)+(c-T.sum(Z*Omega, 0))[None, :]
-        Phi = T.sqrt(2./self.M)*sig_f*T.cos(2*np.pi*FF)
-        PhiTy = T.dot(Phi.T, y)
-        PhiTPhi = T.dot(Phi.T, Phi)
+        Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
+        coef = hyper[t_ind:t_ind+2*self.R];t_ind+=2*self.R
+        Omega = T.sum(T.exp(coef[:self.R][None, None, :]*(
+            L[:, None, :]-F[None, :, :])**2.)*L[:, None, :]*F[None, :, :], 2)
+        Z = T.sum(T.exp(coef[self.R:][None, None, :]*(Z_L[:, None, :]-\
+            Z_F[None, :, :])**2.)*Z_L[:, None, :]*Z_F[None, :, :], 2)
+        theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
+        Theta = T.reshape(theta[:self.M], (1, self.M))
+        Theta_L = T.reshape(theta[self.M:], (1, self.R))
+        FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
+        FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
+        t_Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
+        PhiTPhi = T.dot(t_Phi.T, t_Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
         t_Ri = sT.matrix_inverse(R)
-        GTy = T.dot(t_Ri, PhiTy)
-        t_alpha = T.dot(t_Ri.T, GTy)
-        mu_f = T.dot(Phi, t_alpha)
+        PhiTy = t_Phi.T.dot(y)
+        beta = T.dot(t_Ri, PhiTy)
+        t_alpha = T.dot(t_Ri.T, beta)
+        mu_f = T.dot(t_Phi, t_alpha)
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
-        cost = 2*T.log(T.diagonal(R)).sum()/N+\
-            1./sig2_n/N*((y**2).sum()-(GTy**2).sum())+2*(1-self.M/N)*a
-        penelty = kl(mu_w, sig_w)
-        cost += penelty/N
+        cost = 2*T.log(T.diagonal(R)).sum()/N+1./sig2_n/N*(
+            (y**2).sum()-(beta**2).sum())+2*(1-self.M/N)*a
+        penelty = kl(mu_w, sig_w)/N
+        cost += penelty
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
         train_output = [t_alpha, t_Ri, mu_f, cost, dhyper]
         train_output_name = ['alpha', 'Ri', 'mu_f', 'cost', 'dhyper']
-        self.train_func = theano.function(
-            train_input, train_output, on_unused_input='ignore')
-        FFs = T.dot(Xs, Omega)+(c-T.sum(Z*Omega, 0))[None, :]
-        Phis = T.sqrt(2./self.M)*sig_f*T.cos(2*np.pi*FFs)
+        self.train_func = theano.function(train_input, train_output)
+        FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
+        FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
+        Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
         mu_pred = T.dot(Phis, alpha)
-        std_pred = sig_n+(T.dot(Phis, Ri.T)**2).sum(1)**0.5
+        std_pred = sig_n*(1+(T.dot(Phis, Ri.T)**2).sum(1))**0.5
         pred_input = [Xs, hyper, alpha, Ri]
         pred_input_name = ['Xs', 'hyper', 'alpha', 'Ri']
         pred_output = [mu_pred, std_pred]
         pred_output_name = ['mu_pred', 'std_pred']
-        self.pred_func = theano.function(
-            pred_input, pred_output, on_unused_input='ignore')
+        self.pred_func = theano.function(pred_input, pred_output)
         self.message("done.")
 
     def init_model(self):
         best_hyper, min_cost = None, np.inf
         for _ in range(20):
-            a_b_c = np.random.randn(3)
+            a_and_b = np.random.randn(2)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
-            kps = np.random.rand(self.FKP+self.IKP)
-            hyper = np.concatenate((a_b_c, l, f, kps))
+            coef = np.random.rand(2*self.R)
+            theta = 2*np.pi*np.random.rand(self.M+self.R)
+            hyper = np.concatenate((a_and_b, l, f, coef, theta))
             alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
@@ -164,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("adam", [0.05, 0.9, 0.99], 999, 18, 0.1/(self.N**0.8), True)
+            opt = Optimizer("smorms3", [0.01], 999, 18, 0.1/(self.N**0.8), True)
         plt.close()
         if(plot_training):
             iter_list = []
@@ -281,7 +278,7 @@ class SCFGP(object):
     def save(self, path):
         import pickle
         prior_setting = (self.seed, self.R, self.M)
-        init_objects = (self.freq_kern, self.iduc_kern, self.X_nml, self.y_nml)
+        init_objects = (self.X_nml, self.y_nml)
         train_data = (self.X, self.y)
         matrices = (self.hyper, self.alpha, self.Ri)
         metrics = (self.SCORE, self.COST, self.TrMSE, self.TrNMSE, self.TrTime, 
@@ -297,9 +294,7 @@ class SCFGP(object):
         self.seed, self.R, self.M = load_pack[0]
         self.generate_ID()
         npr.seed(self.seed)
-        self.freq_kern, self.iduc_kern, self.X_nml, self.y_nml = load_pack[1]
-        self.FKP = self.freq_kern.params_size
-        self.IKP = self.iduc_kern.params_size
+        self.X_nml, self.y_nml = load_pack[1]
         self.X, self.y = load_pack[2]
         self.N, self.D = self.X.shape
         self.build_theano_model()
