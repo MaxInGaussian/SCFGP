@@ -77,7 +77,7 @@ class EFD(object):
             self.a(disper)-self.c(y, disper)
             
     def ExpectedNegLogLik(self, y, mu_f, var_f, disper):
-        hermgauss = np.polynomial.hermite.hermgauss(50)
+        hermgauss = np.polynomial.hermite.hermgauss(30)
         x = theano.shared(hermgauss[0])[None, None, :]
         w = theano.shared(hermgauss[1]/np.sqrt(np.pi))[None, None, :]
         enll = w*self.NegLogLik(y[:, :, None], T.sqrt(2*var_f[:, :, None])*x+mu_f[:, :, None], disper)
