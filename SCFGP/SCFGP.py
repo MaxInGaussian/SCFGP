@@ -13,7 +13,7 @@ import theano
 import theano.tensor as T
 import theano.sandbox.linalg as sT
 
-from .FrequencyKernels import FrequencyKernel
+from .EFD import EFD
 from .Optimizers import Optimizer
 from .Normalizers import Normalizer
 
@@ -43,6 +43,7 @@ class SCFGP(object):
         else:
             self.M = feature_size
             self.R = rank
+        self.efd = EFD("gaussian")
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.verbose = verbose
@@ -72,39 +73,40 @@ class SCFGP(object):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
+        c = hyper[2];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
+        disper = T.log(1+T.exp(c))
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
         Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
         f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
         F = T.reshape(f[:self.M*self.R], (self.M, self.R))
         Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
-        coef = hyper[t_ind:t_ind+2*self.R];t_ind+=2*self.R
-        Omega = T.sum(T.exp(coef[:self.R][None, None, :]*(
-            L[:, None, :]-F[None, :, :])**2.)*L[:, None, :]*F[None, :, :], 2)
-        Z = T.sum(T.exp(coef[self.R:][None, None, :]*(Z_L[:, None, :]-\
-            Z_F[None, :, :])**2.)*Z_L[:, None, :]*Z_F[None, :, :], 2)
+        Omega = L.dot(F.T)
+        Z = Z_L.dot(Z_F.T)
         theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
         Theta = T.reshape(theta[:self.M], (1, self.M))
         Theta_L = T.reshape(theta[self.M:], (1, self.R))
         FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
         FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        t_Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
-        PhiTPhi = T.dot(t_Phi.T, t_Phi)
-        A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
+        Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
+        PhiTPhi = T.dot(Phi.T, Phi)
+        A = PhiTPhi*1./(sig2_n+epsilon)+T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
         t_Ri = sT.matrix_inverse(R)
-        PhiTy = t_Phi.T.dot(y)
+        PhiTy = Phi.T.dot(y)
         beta = T.dot(t_Ri, PhiTy)
         t_alpha = T.dot(t_Ri.T, beta)
-        mu_f = T.dot(t_Phi, t_alpha)
+        mu_f = T.dot(Phi, t_alpha)
+        var_f = (T.dot(Phi, t_Ri.T)**2).sum(1)[:, None]
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
-        cost = 2*T.log(T.diagonal(R)).sum()/N+1./sig2_n/N*(
-            (y**2).sum()-(beta**2).sum())+2*(1-self.M/N)*a
-        penelty = kl(mu_w, sig_w)/N
-        cost += penelty
+        cost = 2*T.log(T.diagonal(R)).sum()+2*self.efd.ExpectedNegLogLik(
+            y, mu_f, var_f, disper)+ 1./sig2_n*(
+                (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
+        penelty = kl(mu_w, sig_w)
+        cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
@@ -126,12 +128,11 @@ class SCFGP(object):
     def init_model(self):
         best_hyper, min_cost = None, np.inf
         for _ in range(20):
-            a_and_b = np.random.randn(2)
+            a_b_c = np.random.randn(3)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
-            coef = np.random.rand(2*self.R)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_and_b, l, f, coef, theta))
+            hyper = np.concatenate((a_b_c, l, f, theta))
             alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
@@ -161,7 +162,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.01], 999, 8, 0.1/(self.N**0.8), True)
+            opt = Optimizer("smorms3", [0.01], 999, 18, 0.1/(self.N**0.8), True)
         plt.close()
         if(plot_training):
             iter_list = []

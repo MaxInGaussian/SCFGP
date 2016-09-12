@@ -7,6 +7,6 @@
 __version__ = "0.0.1"
 
 from .SCFGP import SCFGP
-from .FrequencyKernels import FrequencyKernel
+from .EFD import EFD
 from .Optimizers import Optimizer
 from .Normalizers import Normalizer

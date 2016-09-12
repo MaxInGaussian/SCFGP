@@ -36,7 +36,7 @@ for i, kern in enumerate(kerns):
     for feature_size in feature_size_choices:
         for _ in range(repeats):
             X_train, y_train, X_test, y_test = load_kin8nm_data()
-            model = SCFGP(-1, feature_size, verbose=False)
+            model = SCFGP(-1, feature_size, verbose=True)
             model.fit(X_train, y_train, X_test, y_test, plot_training=True)
             nmses[i].append(model.TsNMSE)
             mnlps[i].append(model.TsMNLP)
