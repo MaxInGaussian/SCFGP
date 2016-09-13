@@ -28,7 +28,7 @@ def load_boston_data(proportion=106./506):
 
 repeats = 3
 kerns = ["dot", "lin", "rbf", 'exp', 'per']
-feature_size_choices = [20]
+feature_size_choices = [50]
 scores = [[] for _ in kerns]
 nmses = [[] for _ in kerns]
 mnlps = [[] for _ in kerns]
@@ -36,7 +36,7 @@ X_train, y_train, X_test, y_test = load_boston_data()
 for i, kern in enumerate(kerns):
     for feature_size in feature_size_choices:
         for _ in range(repeats):
-            model = SCFGP(-1, feature_size, kern, kern, False)
+            model = SCFGP(-1, feature_size, False)
             model.fit(X_train, y_train, X_test, y_test, plot_training=True)
             nmses[i].append(model.TsNMSE)
             mnlps[i].append(model.TsMNLP)

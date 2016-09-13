@@ -73,10 +73,8 @@ class SCFGP(object):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
-        c = hyper[2];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
-        disper = T.log(1+T.exp(c))
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
         Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
@@ -92,7 +90,7 @@ class SCFGP(object):
         FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
         Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
         PhiTPhi = T.dot(Phi.T, Phi)
-        A = PhiTPhi*1./(sig2_n+epsilon)+T.identity_like(PhiTPhi)
+        A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
         t_Ri = sT.matrix_inverse(R)
         PhiTy = Phi.T.dot(y)
@@ -100,10 +98,11 @@ class SCFGP(object):
         t_alpha = T.dot(t_Ri.T, beta)
         mu_f = T.dot(Phi, t_alpha)
         var_f = (T.dot(Phi, t_Ri.T)**2).sum(1)[:, None]
+        disper = sig2_n*(var_f+1)
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
         cost = 2*T.log(T.diagonal(R)).sum()+2*self.efd.ExpectedNegLogLik(
-            y, mu_f, var_f, disper)+ 1./sig2_n*(
+            y, mu_f, var_f, disper)+1./sig2_n*(
                 (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
         penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
@@ -127,12 +126,12 @@ class SCFGP(object):
 
     def init_model(self):
         best_hyper, min_cost = None, np.inf
-        for _ in range(20):
-            a_b_c = np.random.randn(3)
+        for _ in range(50):
+            a_b = np.random.randn(2)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_b_c, l, f, theta))
+            hyper = np.concatenate((a_b, l, f, theta))
             alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
@@ -162,7 +161,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.01], 999, 18, 0.1/(self.N**0.8), True)
+            opt = Optimizer("smorms3", [0.01], 999, 28, 1e-3, True)
         plt.close()
         if(plot_training):
             iter_list = []

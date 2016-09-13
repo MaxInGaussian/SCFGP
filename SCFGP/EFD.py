@@ -21,6 +21,20 @@ class EFD(object):
         assert efd.lower() in self.available_efds, "Invalid Distribution!"
         self.efd = efd.lower()
     
+    def mu_pred(self, mu_f, disper):
+        theta = self.theta(f)
+        if(self.efd == "gaussian"):
+            return theta
+        elif(self.efd == "bernoulli"):
+            return 1./(1+T.exp(-theta))
+        elif(self.efd == "poisson"):
+            return T.exp(theta)
+        elif(self.efd == "beta"):
+            return mu_f
+    
+    def predProb(self, y, mu_f, var_f, disper):
+        return T.exp(-self.ExpectedNegLogLik(y, mu_f, var_f, disper))
+    
     def theta(self, f):
         if(self.efd == "gaussian"):
             return f
@@ -80,5 +94,6 @@ class EFD(object):
         hermgauss = np.polynomial.hermite.hermgauss(30)
         x = theano.shared(hermgauss[0])[None, None, :]
         w = theano.shared(hermgauss[1]/np.sqrt(np.pi))[None, None, :]
-        enll = w*self.NegLogLik(y[:, :, None], T.sqrt(2*var_f[:, :, None])*x+mu_f[:, :, None], disper)
+        enll = w*self.NegLogLik(y[:, :, None], T.sqrt(
+            2*var_f[:, :, None])*x+mu_f[:, :, None], disper[:, :, None])
         return enll.sum()
