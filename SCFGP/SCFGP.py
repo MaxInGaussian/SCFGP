@@ -103,7 +103,7 @@ class SCFGP(object):
         sig_w = T.sum(T.std(Omega, axis=1))
         cost = 2*T.log(T.diagonal(R)).sum()+2*self.efd.ExpectedNegLogLik(
             y, mu_f, var_f, disper)+1./sig2_n*(
-                (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
+                (y**2).sum()-(beta**2).sum()-var_f.sum())+2*(N-self.M)*a
         penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
