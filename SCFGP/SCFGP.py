@@ -34,20 +34,12 @@ class SCFGP(object):
     SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
     def __init__(self, rank=-1, feature_size=-1, verbose=True):
-        if(rank == -1 and feature_size != -1):
-            self.M = feature_size
-            self.R = int(feature_size**0.5+1)
-        elif(rank != -1 and feature_size == -1):
-            self.M = int(rank**2+1)
-            self.R = rank
-        else:
-            self.M = feature_size
-            self.R = rank
+        self.M = feature_size
+        self.R = rank
         self.efd = EFD("gaussian")
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.verbose = verbose
-        self.generate_ID()
     
     def message(self, *arg):
         if(self.verbose):
@@ -73,8 +65,10 @@ class SCFGP(object):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
+        c = hyper[2];t_ind+=1
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
+        noise = T.log(1+T.exp(c))
         l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
         L = T.reshape(l[self.D*self.R:], (self.D, self.R))
         Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
@@ -98,11 +92,11 @@ class SCFGP(object):
         t_alpha = T.dot(t_Ri.T, beta)
         mu_f = T.dot(Phi, t_alpha)
         var_f = (T.dot(Phi, t_Ri.T)**2).sum(1)[:, None]
-        disper = sig2_n*(var_f+1)
+        disper = noise*(var_f+1)
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
-        cost = 2*T.log(T.diagonal(R)).sum()+2*self.efd.ExpectedNegLogLik(
-            y, mu_f, var_f, disper)+1./sig2_n*(
+        gauss_enll = self.efd.ExpectedNegLogLik(y, mu_f, var_f, disper)
+        cost = 2*T.log(T.diagonal(R)).sum()+2*gauss_enll+1./sig2_n*(
                 (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
         penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
@@ -116,7 +110,7 @@ class SCFGP(object):
         FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
         Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
         mu_pred = T.dot(Phis, alpha)
-        std_pred = sig_n*(1+(T.dot(Phis, Ri.T)**2).sum(1))**0.5
+        std_pred = (noise*(1+(T.dot(Phis, Ri.T)**2).sum(1)))**0.5
         pred_input = [Xs, hyper, alpha, Ri]
         pred_input_name = ['Xs', 'hyper', 'alpha', 'Ri']
         pred_output = [mu_pred, std_pred]
@@ -127,11 +121,11 @@ class SCFGP(object):
     def init_model(self):
         best_hyper, min_cost = None, np.inf
         for _ in range(50):
-            a_b = np.random.randn(2)
+            a_b_c = np.random.randn(3)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
             theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_b, l, f, theta))
+            hyper = np.concatenate((a_b_c, l, f, theta))
             alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
             self.message("Random parameters yield cost:", cost)
@@ -149,6 +143,11 @@ class SCFGP(object):
         self.X = self.X_nml.forward_transform(X)
         self.y = self.y_nml.forward_transform(y)
         self.N, self.D = self.X.shape
+        if(self.M == -1):
+            self.M = int(min(self.N/10., self.N**0.6))
+        if(self.R == -1):
+            self.R = int(min(self.D/2., self.M**0.6))
+        self.generate_ID()
         if(funcs is None):
             self.build_theano_model()
         else:
@@ -278,7 +277,7 @@ class SCFGP(object):
     def save(self, path):
         import pickle
         prior_setting = (self.seed, self.R, self.M)
-        init_objects = (self.X_nml, self.y_nml)
+        init_objects = (self.X_nml, self.y_nml, self.efd)
         train_data = (self.X, self.y)
         matrices = (self.hyper, self.alpha, self.Ri)
         metrics = (self.SCORE, self.COST, self.TrMSE, self.TrNMSE, self.TrTime, 
@@ -294,7 +293,7 @@ class SCFGP(object):
         self.seed, self.R, self.M = load_pack[0]
         self.generate_ID()
         npr.seed(self.seed)
-        self.X_nml, self.y_nml = load_pack[1]
+        self.X_nml, self.y_nml, self.efd = load_pack[1]
         self.X, self.y = load_pack[2]
         self.N, self.D = self.X.shape
         self.build_theano_model()

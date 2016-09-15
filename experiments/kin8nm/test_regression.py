@@ -31,15 +31,15 @@ feature_size_choices = [50]
 scores = []
 nmses = []
 mnlps = []
-X_train, y_train, X_test, y_test = load_kin8nm_data()
-for feature_size in feature_size_choices:
-    for _ in range(repeats):
-        model = SCFGP(-1, feature_size, False)
+for _ in range(repeats):
+    X_train, y_train, X_test, y_test = load_kin8nm_data()
+    for exp in [True, False]:
+        model = SCFGP(-1, 20, False)
         model.fit(X_train, y_train, X_test, y_test, plot_training=True)
         nmses.append(model.TsNMSE)
         mnlps.append(model.TsMNLP)
         scores.append(model.SCORE)
-        print("\n>>>", model.NAME)
+        print("\n>>>", model.NAME, exp)
         print("    NMSE = %.4f | Avg = %.4f | Std = %.4f"%(
             model.TsNMSE, np.mean(nmses), np.std(nmses)))
         print("    MNLP = %.4f | Avg = %.4f | Std = %.4f"%(
