@@ -137,7 +137,7 @@ class SCFGP(object):
             self.train_func(self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
-        plot_training=False, plot_1d_function=False):
+        plot=False, plot_1d=False):
         self.X_nml.fit(X)
         self.y_nml.fit(y)
         self.X = self.X_nml.forward_transform(X)
@@ -156,13 +156,13 @@ class SCFGP(object):
             self.Xs = self.X_nml.forward_transform(Xs)
             self.ys = self.y_nml.forward_transform(ys)
         else:
-            plot_training = False
+            plot = False
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
             opt = Optimizer("smorms3", [0.05], 999, 28, 1e-3, True)
         plt.close()
-        if(plot_training):
+        if(plot):
             iter_list = []
             cost_list = []
             train_nmse_list = []
@@ -171,12 +171,12 @@ class SCFGP(object):
                 2, figsize=(8, 6), facecolor='white', dpi=120)
             plot_train_fig.suptitle(self.NAME, fontsize=15)
             plt.xlabel('# iteration', fontsize=13)
-        if(plot_1d_function):
+        if(plot_1d):
             plot_1d_fig = plt.figure(facecolor='white', dpi=120)
             plot_1d_fig.suptitle(self.NAME, fontsize=15)
             plot_1d_ax = plot_1d_fig.add_subplot(111)
         def animate(i):
-            if(plot_training):
+            if(plot):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
                     cost_list.pop(0)
@@ -196,7 +196,7 @@ class SCFGP(object):
                 handles, labels = plot_train_axarr[1].get_legend_handles_labels()
                 plot_train_axarr[1].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=2, fancybox=True)
-            if(plot_1d_function):
+            if(plot_1d):
                 plot_1d_ax.cla()
                 pts = 300
                 errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
@@ -234,18 +234,18 @@ class SCFGP(object):
                 callback()
             if(iter == -1):
                 return
-            if(plot_training):
+            if(plot):
                 iter_list.append(iter)
                 cost_list.append(self.COST)
                 train_nmse_list.append(self.TrNMSE)
                 test_nmse_list.append(self.TsNMSE)
                 plt.pause(0.01)
-            if(plot_1d_function):
+            if(plot_1d):
                 plt.pause(0.05)
             return self.COST, self.TrNMSE, dhyper
-        if(plot_training):
+        if(plot):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
-        if(plot_1d_function):
+        if(plot_1d):
             ani = anm.FuncAnimation(plot_1d_fig, animate, interval=500)
         opt.run(train, self.hyper)
         train_finish_time = time.time()

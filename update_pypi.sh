@@ -1,0 +1,1 @@
+ppp publish -s=pypi
