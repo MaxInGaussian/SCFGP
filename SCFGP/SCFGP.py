@@ -160,7 +160,7 @@ class SCFGP(object):
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05], 999, 28, 1e-3, True)
+            opt = Optimizer("smorms3", [0.05], 999, 28, 1e-4, True)
         plt.close()
         if(plot):
             iter_list = []
@@ -242,6 +242,8 @@ class SCFGP(object):
                 plt.pause(0.01)
             if(plot_1d):
                 plt.pause(0.05)
+            if(Xs is not None and ys is not None):                
+                return self.COST, self.TsNMSE, dhyper
             return self.COST, self.TrNMSE, dhyper
         if(plot):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)

@@ -173,7 +173,11 @@ class Optimizer(object):
         g2 = np.ones_like(x0)
         adjust_step = True
         for i in range(self.max_iter):
-            f, e, g = train(i+1, x)
+            evals = train(i+1, x)
+            if(len(evals) == 3):
+                f, e, g = evals
+            elif(len(evals) == 4):
+                f, e, g, vd = evals
             if(not self.stop_by_train_error):
                 e = f
             if(adjust_step and last_e is not None and e > 0 and last_e > 0):
