@@ -30,7 +30,7 @@ class SCFGP(object):
     ID, NAME, seed, verbose = "", "", None, True
     freq_kern, iduc_kern, X_nml, y_nml = [None]*4
     R, M, N, D, FKP, IKP = -1, -1, -1, -1, -1, -1
-    X, y, Xs, ys, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*10
+    X, y, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*8
     SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
     def __init__(self, rank=-1, feature_size=-1, verbose=True):
@@ -136,7 +136,7 @@ class SCFGP(object):
         self.alpha, self.Ri, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
-    def fit(self, X, y, Xs=None, ys=None, funcs=None, opt=None, callback=None,
+    def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, callback=None,
         plot=False, plot_1d=False):
         self.X_nml.fit(X)
         self.y_nml.fit(y)
@@ -152,15 +152,15 @@ class SCFGP(object):
             self.build_theano_model()
         else:
             self.train_func, self.pred_func = funcs
-        if(Xs is not None and ys is not None):
-            self.Xs = self.X_nml.forward_transform(Xs)
-            self.ys = self.y_nml.forward_transform(ys)
+        if(Xv is not None and yv is not None):
+            self.Xv = self.X_nml.forward_transform(Xv)
+            self.yv = self.y_nml.forward_transform(yv)
         else:
             plot = False
         train_start_time = time.time()
         self.init_model()
         if(opt is None):
-            opt = Optimizer("smorms3", [0.05], 999, 28, 1e-4, True)
+            opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 18, 1e-4, True)
         plt.close()
         if(plot):
             iter_list = []
@@ -228,8 +228,8 @@ class SCFGP(object):
             self.message(self.NAME, " COST = %.4f"%(self.COST))
             self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
             self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
-            if(Xs is not None and ys is not None):
-                self.predict(Xs, ys)
+            if(Xv is not None and yv is not None):
+                self.predict(Xv, yv)
             if(callback is not None):
                 callback()
             if(iter == -1):
@@ -242,7 +242,7 @@ class SCFGP(object):
                 plt.pause(0.01)
             if(plot_1d):
                 plt.pause(0.05)
-            if(Xs is not None and ys is not None):                
+            if(Xv is not None and yv is not None):                
                 return self.COST, self.TsNMSE, dhyper
             return self.COST, self.TrNMSE, dhyper
         if(plot):
@@ -254,19 +254,17 @@ class SCFGP(object):
         self.TrTime = train_finish_time-train_start_time
 
     def predict(self, Xs, ys=None):
-        self.Xs = self.X_nml.forward_transform(Xs)
         mu_pred, std_pred = self.pred_func(
-            self.Xs, self.hyper, self.alpha, self.Ri)
-        self.mu_pred = self.y_nml.backward_transform(mu_pred)
-        self.std_pred = std_pred[:, None]*self.y_nml.data["std"]
+            self.X_nml.forward_transform(Xs), self.hyper, self.alpha, self.Ri)
+        mu_pred = self.y_nml.backward_transform(mu_pred)
+        std_pred = std_pred[:, None]*self.y_nml.data["std"]
         if(ys is not None):
-            self.ys = self.y_nml.forward_transform(ys)
-            self.TsMAE = np.mean(np.abs(self.mu_pred-ys))
-            self.TsMSE = np.mean((self.mu_pred-ys)**2.)
-            self.TsRMSE = np.sqrt(np.mean((self.mu_pred-ys)**2.))
+            self.TsMAE = np.mean(np.abs(mu_pred-ys))
+            self.TsMSE = np.mean((mu_pred-ys)**2.)
+            self.TsRMSE = np.sqrt(np.mean((mu_pred-ys)**2.))
             self.TsNMSE = self.TsMSE/np.var(ys)
-            self.TsMNLP = 0.5*np.mean(((ys-self.mu_pred)/\
-                self.std_pred)**2+np.log(2*np.pi*self.std_pred**2))
+            self.TsMNLP = 0.5*np.mean(((ys-mu_pred)/\
+                std_pred)**2+np.log(2*np.pi*std_pred**2))
             self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
             self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
             self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
@@ -274,7 +272,7 @@ class SCFGP(object):
             self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
             self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
             self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
-        return self.mu_pred, self.std_pred
+        return mu_pred, std_pred
 
     def save(self, path):
         import pickle
