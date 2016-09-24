@@ -184,12 +184,12 @@ class SCFGP(object):
                     test_nmse_list.pop(0)
                 plot_train_axarr[0].cla()
                 plot_train_axarr[0].plot(iter_list, cost_list,
-                    color='r', linewidth=2.0, label='Training cost')
+                    color='r', linewidth=2.0, label='Training COST')
                 plot_train_axarr[1].cla()
                 plot_train_axarr[1].plot(iter_list, train_nmse_list,
                     color='b', linewidth=2.0, label='Training NMSE')
                 plot_train_axarr[1].plot(iter_list, test_nmse_list,
-                    color='g', linewidth=2.0, label='Testing NMSE')
+                    color='g', linewidth=2.0, label='Validation NMSE')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
