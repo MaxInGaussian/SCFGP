@@ -291,9 +291,8 @@ class SCFGP(object):
         with open(path, "rb") as load_f:
             load_pack = pickle.load(load_f)
         self.ID, self.seed, self.R, self.M = load_pack[0]
-        self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
-        self.seed = np.prod([ord(c) for c in self.ID])%4294967291
         npr.seed(self.seed)
+        self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
         self.X_nml, self.y_nml, self.efd = load_pack[1]
         self.X, self.y = load_pack[2]
         self.N, self.D = self.X.shape
