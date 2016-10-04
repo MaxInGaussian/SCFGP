@@ -276,7 +276,7 @@ class SCFGP(object):
 
     def save(self, path):
         import pickle
-        prior_setting = (self.seed, self.R, self.M)
+        prior_setting = (self.ID, self.seed, self.R, self.M)
         init_objects = (self.X_nml, self.y_nml, self.efd)
         train_data = (self.X, self.y)
         matrices = (self.hyper, self.alpha, self.Ri)
@@ -290,8 +290,9 @@ class SCFGP(object):
         import pickle
         with open(path, "rb") as load_f:
             load_pack = pickle.load(load_f)
-        self.seed, self.R, self.M = load_pack[0]
-        self.generate_ID()
+        self.ID, self.seed, self.R, self.M = load_pack[0]
+        self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
+        self.seed = np.prod([ord(c) for c in self.ID])%4294967291
         npr.seed(self.seed)
         self.X_nml, self.y_nml, self.efd = load_pack[1]
         self.X, self.y = load_pack[2]
