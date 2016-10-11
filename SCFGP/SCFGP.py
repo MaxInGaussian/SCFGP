@@ -186,10 +186,10 @@ class SCFGP(object):
                 plot_train_axarr[0].plot(iter_list, cost_list,
                     color='r', linewidth=2.0, label='Training COST')
                 plot_train_axarr[1].cla()
-                plot_train_axarr[1].plot(iter_list, train_nmse_list,
-                    color='b', linewidth=2.0, label='Training NMSE')
-                plot_train_axarr[1].plot(iter_list, test_nmse_list,
-                    color='g', linewidth=2.0, label='Validation NMSE')
+                plot_train_axarr[1].plot(iter_list, train_nmae_list,
+                    color='b', linewidth=2.0, label='Training NMAE')
+                plot_train_axarr[1].plot(iter_list, test_nmae_list,
+                    color='g', linewidth=2.0, label='Validation NMAE')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
@@ -222,10 +222,14 @@ class SCFGP(object):
             self.alpha, self.Ri, mu_f, self.COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
+            self.TrMAE = np.mean(np.abs(self.mu_f-y))
+            self.TrNMAE = (np.mean(np.abs(self.mu_f-y))**2.)/np.var(y)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
             self.message(self.NAME, " COST = %.4f"%(self.COST))
+            self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
+            self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
             self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
             self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xv is not None and yv is not None):
@@ -237,14 +241,16 @@ class SCFGP(object):
             if(plot):
                 iter_list.append(iter)
                 cost_list.append(self.COST)
+                train_nmae_list.append(self.TrNMAE)
+                test_nmae_list.append(self.TsNMAE)
                 train_nmse_list.append(self.TrNMSE)
                 test_nmse_list.append(self.TsNMSE)
                 plt.pause(0.01)
             if(plot_1d):
                 plt.pause(0.05)
             if(Xv is not None and yv is not None):                
-                return self.COST, self.TsNMSE, dhyper
-            return self.COST, self.TrNMSE, dhyper
+                return self.COST, self.TsNMAE, dhyper
+            return self.COST, self.TrNMAE, dhyper
         if(plot):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d):
