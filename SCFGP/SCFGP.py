@@ -266,7 +266,7 @@ class SCFGP(object):
         std_pred = std_pred[:, None]*self.y_nml.data["std"]
         if(ys is not None):
             self.TsMAE = np.mean(np.abs(mu_pred-ys))
-            self.TsNMAE = self.TsMAE/np.std(y)
+            self.TsNMAE = self.TsMAE/np.std(ys)
             self.TsMSE = np.mean((mu_pred-ys)**2.)
             self.TsRMSE = np.sqrt(np.mean((mu_pred-ys)**2.))
             self.TsNMSE = self.TsMSE/np.var(ys)
