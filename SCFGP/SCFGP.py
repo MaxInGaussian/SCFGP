@@ -165,6 +165,8 @@ class SCFGP(object):
         if(plot):
             iter_list = []
             cost_list = []
+            train_nmae_list = []
+            test_nmae_list = []
             train_nmse_list = []
             test_nmse_list = []
             plot_train_fig, plot_train_axarr = plt.subplots(
