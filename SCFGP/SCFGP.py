@@ -223,7 +223,7 @@ class SCFGP(object):
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
             self.TrMAE = np.mean(np.abs(self.mu_f-y))
-            self.TrNMAE = (np.mean(np.abs(self.mu_f-y))**2.)/np.var(y)
+            self.TrNMAE = self.TrMAE/np.std(y)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
             self.message("="*20, "TRAINING ITERATION", iter, "="*20)
@@ -266,6 +266,7 @@ class SCFGP(object):
         std_pred = std_pred[:, None]*self.y_nml.data["std"]
         if(ys is not None):
             self.TsMAE = np.mean(np.abs(mu_pred-ys))
+            self.TsNMAE = self.TsMAE/np.std(y)
             self.TsMSE = np.mean((mu_pred-ys)**2.)
             self.TsRMSE = np.sqrt(np.mean((mu_pred-ys)**2.))
             self.TsNMSE = self.TsMSE/np.var(ys)
