@@ -58,7 +58,7 @@ class SCFGP(object):
         epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-T.log(sig)
         snorm_cdf = lambda y: .5*(1+T.erf(y/T.sqrt(2+epsilon)+epsilon))
-        self.message("Compiling SCFGP theano model...")
+        self.message("-"*60, "\nCompiling SCFGP theano model...")
         X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
         N, S = X.shape[0], Xs.shape[0]
         hyper = T.dvector('hyper')
