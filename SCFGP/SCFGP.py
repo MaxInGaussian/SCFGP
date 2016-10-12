@@ -58,7 +58,6 @@ class SCFGP(object):
         epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-T.log(sig)
         snorm_cdf = lambda y: .5*(1+T.erf(y/T.sqrt(2+epsilon)+epsilon))
-        self.message("-"*60, "\nCompiling SCFGP theano model...")
         X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
         N, S = X.shape[0], Xs.shape[0]
         hyper = T.dvector('hyper')
@@ -116,11 +115,10 @@ class SCFGP(object):
         pred_output = [mu_pred, std_pred]
         pred_output_name = ['mu_pred', 'std_pred']
         self.pred_func = theano.function(pred_input, pred_output)
-        self.message("done.")
 
     def init_model(self):
         best_hyper, min_cost = None, np.inf
-        for _ in range(50):
+        for _ in range(18):
             a_b_c = np.random.randn(3)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
@@ -137,10 +135,13 @@ class SCFGP(object):
 
     def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, callback=None,
         plot='mae', plot_1d=False):
+        self.opt = opt
+        self.message("-"*50, "\nNormalizing SCFGP training data...")
         self.X_nml.fit(X)
         self.y_nml.fit(y)
         self.X = self.X_nml.forward_transform(X)
         self.y = self.y_nml.forward_transform(y)
+        self.message("done.")
         self.N, self.D = self.X.shape
         if(self.M == -1):
             self.M = int(min(self.N/10., self.N**0.6))
@@ -148,7 +149,9 @@ class SCFGP(object):
             self.R = int(min(self.D/2., self.M**0.6))
         self.generate_ID()
         if(funcs is None):
+            self.message("-"*50, "\nCompiling SCFGP theano model...")
             self.build_theano_model()
+            self.message("done.")
         else:
             self.train_func, self.pred_func = funcs
         if(Xv is not None and yv is not None):
@@ -157,9 +160,11 @@ class SCFGP(object):
         else:
             plot = False
         train_start_time = time.time()
+        self.message("-"*50, "\nInitializing SCFGP hyperparameters...")
         self.init_model()
-        if(opt is None):
-            opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 10, 1e-4, True)
+        self.message("done.")
+        if(self.opt is None):
+            self.opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 10, 1e-4, True)
         plt.close()
         if(plot):
             iter_list = []
@@ -261,9 +266,9 @@ class SCFGP(object):
             self.TrNMAE = self.TrMAE/np.std(y)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
-            if(self.iter % opt.max_iter//10 == 1):
-                self.message("-"*20, "TRAINING ITERATION", iter, "-"*20)
-                self.message(self.NAME, " COST = %.4f"%(self.COST))
+            if(self.iter%(self.opt.max_iter//10) == 1):
+                self.message("-"*15, "TRAINING ITERATION", iter, "-"*15)
+                self.message(self.NAME, "   COST = %.4f"%(self.COST))
                 self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
                 self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
                 self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
@@ -304,23 +309,22 @@ class SCFGP(object):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d):
             ani = anm.FuncAnimation(plot_1d_fig, animate, interval=500)
-        opt.run(train, self.hyper)
+        self.opt.run(train, self.hyper)
         train_finish_time = time.time()
         self.TrTime = train_finish_time-train_start_time
-        if(self.iter % opt.max_iter//10 == 1):
-            self.message("-"*20, "TRAINING RESULT", "-"*20)
-            self.message(self.NAME, " COST = %.4f"%(self.COST))
-            self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
-            self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
-            self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
-            self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
-            self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
-            self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
-            self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
-            self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
-            self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
-            self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
-            self.message("="*60)
+        self.message("-"*15, "TRAINING RESULT", "-"*15)
+        self.message(self.NAME, " COST = %.4f"%(self.COST))
+        self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
+        self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
+        self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
+        self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
+        self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
+        self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
+        self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
+        self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
+        self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
+        self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
+        self.message("="*60)
 
     def predict(self, Xs, ys=None):
         mu_pred, std_pred = self.pred_func(
@@ -335,7 +339,7 @@ class SCFGP(object):
             self.TsMNLP = 0.5*np.mean(((ys-mu_pred)/\
                 std_pred)**2+np.log(2*np.pi*std_pred**2))
             self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
-            if(self.iter % opt.max_iter//10 == 1):
+            if(self.iter%(self.opt.max_iter//10) == 1):
                 self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
                 self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
                 self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
