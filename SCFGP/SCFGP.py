@@ -267,7 +267,7 @@ class SCFGP(object):
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
             if(self.iter%(self.opt.max_iter//10) == 1):
-                self.message("-"*15, "TRAINING ITERATION", iter, "-"*15)
+                self.message("-"*14, "TRAINING ITERATION", iter, "-"*14)
                 self.message(self.NAME, "   COST = %.4f"%(self.COST))
                 self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
                 self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
@@ -312,7 +312,7 @@ class SCFGP(object):
         self.opt.run(train, self.hyper)
         train_finish_time = time.time()
         self.TrTime = train_finish_time-train_start_time
-        self.message("-"*15, "TRAINING RESULT", "-"*15)
+        self.message("-"*14, "TRAINING RESULT", "-"*14)
         self.message(self.NAME, " COST = %.4f"%(self.COST))
         self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
         self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
