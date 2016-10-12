@@ -137,7 +137,7 @@ class SCFGP(object):
             self.train_func(self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, callback=None,
-        plot=False, plot_1d=False):
+        plot='mae', plot_1d=False):
         self.X_nml.fit(X)
         self.y_nml.fit(y)
         self.X = self.X_nml.forward_transform(X)
@@ -165,10 +165,18 @@ class SCFGP(object):
         if(plot):
             iter_list = []
             cost_list = []
-            train_nmae_list = []
-            test_nmae_list = []
-            train_nmse_list = []
-            test_nmse_list = []
+            if(plot.lower() == 'mae'):
+                train_mae_list = []
+                test_mae_list = []
+            elif(plot.lower() == 'nmae'):
+                train_nmae_list = []
+                test_nmae_list = []
+            elif(plot.lower() == 'mse'):
+                train_mse_list = []
+                test_mse_list = []
+            elif(plot.lower() == 'nmse'):
+                train_nmse_list = []
+                test_nmse_list = []
             plot_train_fig, plot_train_axarr = plt.subplots(
                 2, figsize=(8, 6), facecolor='white', dpi=120)
             plot_train_fig.suptitle(self.NAME, fontsize=15)
@@ -188,10 +196,26 @@ class SCFGP(object):
                 plot_train_axarr[0].plot(iter_list, cost_list,
                     color='r', linewidth=2.0, label='Training COST')
                 plot_train_axarr[1].cla()
-                plot_train_axarr[1].plot(iter_list, train_nmae_list,
-                    color='b', linewidth=2.0, label='Training NMAE')
-                plot_train_axarr[1].plot(iter_list, test_nmae_list,
-                    color='g', linewidth=2.0, label='Validation NMAE')
+                if(plot.lower() == 'mae'):
+                    plot_train_axarr[1].plot(iter_list, train_mae_list,
+                        color='b', linewidth=2.0, label='Training MAE')
+                    plot_train_axarr[1].plot(iter_list, test_mae_list,
+                        color='g', linewidth=2.0, label='Validation MAE')
+                elif(plot.lower() == 'nmae'):
+                    plot_train_axarr[1].plot(iter_list, train_nmae_list,
+                        color='b', linewidth=2.0, label='Training NMAE')
+                    plot_train_axarr[1].plot(iter_list, test_nmae_list,
+                        color='g', linewidth=2.0, label='Validation NMAE')
+                elif(plot.lower() == 'mse'):
+                    plot_train_axarr[1].plot(iter_list, train_mse_list,
+                        color='b', linewidth=2.0, label='Training MSE')
+                    plot_train_axarr[1].plot(iter_list, test_mse_list,
+                        color='g', linewidth=2.0, label='Validation MSE')
+                elif(plot.lower() == 'nmse'):
+                    plot_train_axarr[1].plot(iter_list, train_nmse_list,
+                        color='b', linewidth=2.0, label='Training NMSE')
+                    plot_train_axarr[1].plot(iter_list, test_nmse_list,
+                        color='g', linewidth=2.0, label='Validation NMSE')
                 handles, labels = plot_train_axarr[0].get_legend_handles_labels()
                 plot_train_axarr[0].legend(handles, labels, loc='upper center',
                     bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
@@ -251,8 +275,8 @@ class SCFGP(object):
             if(plot_1d):
                 plt.pause(0.05)
             if(Xv is not None and yv is not None):                
-                return self.COST, self.TsNMAE, dhyper
-            return self.COST, self.TrNMAE, dhyper
+                return self.COST, self.TsNMSE, dhyper
+            return self.COST, self.TrNMSE, dhyper
         if(plot):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
         if(plot_1d):
@@ -270,14 +294,13 @@ class SCFGP(object):
             self.TsMAE = np.mean(np.abs(mu_pred-ys))
             self.TsNMAE = self.TsMAE/np.std(ys)
             self.TsMSE = np.mean((mu_pred-ys)**2.)
-            self.TsRMSE = np.sqrt(np.mean((mu_pred-ys)**2.))
             self.TsNMSE = self.TsMSE/np.var(ys)
             self.TsMNLP = 0.5*np.mean(((ys-mu_pred)/\
                 std_pred)**2+np.log(2*np.pi*std_pred**2))
             self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
             self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
+            self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
             self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
-            self.message(self.NAME, " TsRMSE = %.4f"%(self.TsRMSE))
             self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
             self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
             self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
@@ -289,8 +312,9 @@ class SCFGP(object):
         init_objects = (self.X_nml, self.y_nml, self.efd)
         train_data = (self.X, self.y)
         matrices = (self.hyper, self.alpha, self.Ri)
-        metrics = (self.SCORE, self.COST, self.TrMSE, self.TrNMSE, self.TrTime, 
-            self.TsMAE, self.TsMSE, self.TsRMSE, self.TsNMSE, self.TsMNLP)
+        metrics = (self.SCORE, self.COST, self.TrMAE, self.TrNMAE, self.TrMSE,
+            self.TrNMSE, self.TrTime, self.TsMAE, self.TsMSE,
+            self.TsRMSE, self.TsNMSE, self.TsMNLP)
         save_pack = [prior_setting, init_objects, train_data, matrices, metrics]
         with open(path, "wb") as save_f:
             pickle.dump(save_pack, save_f, pickle.HIGHEST_PROTOCOL)
@@ -306,8 +330,8 @@ class SCFGP(object):
         self.N, self.D = self.X.shape
         self.build_theano_model()
         self.hyper, self.alpha, self.Ri = load_pack[3]
-        [self.SCORE, self.COST, self.TrMSE, self.TrNMSE,
-            self.TrTime, self.TsMAE, self.TsMSE, self.TsRMSE,
+        [self.SCORE, self.COST, self.TrMAE, self.TrNMAE, self.TrMSE,
+            self.TrNMSE, self.TrTime, self.TsMAE, self.TsMSE, self.TsRMSE,
                 self.TsNMSE, self.TsMNLP] = load_pack[4]
 
 
