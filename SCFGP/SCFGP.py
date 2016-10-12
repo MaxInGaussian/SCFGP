@@ -128,7 +128,6 @@ class SCFGP(object):
             hyper = np.concatenate((a_b_c, l, f, theta))
             alpha, Ri, mu_f, cost, _ =\
                 self.train_func(self.X, self.y, hyper)
-            self.message("Random parameters yield cost:", cost)
             if(cost < min_cost):
                 min_cost = cost
                 best_hyper = hyper.copy()
@@ -262,12 +261,13 @@ class SCFGP(object):
             self.TrNMAE = self.TrMAE/np.std(y)
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
-            self.message("="*20, "TRAINING ITERATION", iter, "="*20)
-            self.message(self.NAME, " COST = %.4f"%(self.COST))
-            self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
-            self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
-            self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
-            self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
+            if(self.iter % opt.max_iter//10 == 1):
+                self.message("-"*20, "TRAINING ITERATION", iter, "-"*20)
+                self.message(self.NAME, " COST = %.4f"%(self.COST))
+                self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
+                self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
+                self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
+                self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
             if(Xv is not None and yv is not None):
                 self.predict(Xv, yv)
             if(callback is not None):
@@ -307,6 +307,20 @@ class SCFGP(object):
         opt.run(train, self.hyper)
         train_finish_time = time.time()
         self.TrTime = train_finish_time-train_start_time
+        if(self.iter % opt.max_iter//10 == 1):
+            self.message("-"*20, "TRAINING RESULT", "-"*20)
+            self.message(self.NAME, " COST = %.4f"%(self.COST))
+            self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
+            self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
+            self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
+            self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
+            self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
+            self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
+            self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
+            self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
+            self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
+            self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
+            self.message("="*60)
 
     def predict(self, Xs, ys=None):
         mu_pred, std_pred = self.pred_func(
@@ -321,12 +335,13 @@ class SCFGP(object):
             self.TsMNLP = 0.5*np.mean(((ys-mu_pred)/\
                 std_pred)**2+np.log(2*np.pi*std_pred**2))
             self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
-            self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
-            self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
-            self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
-            self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
-            self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
-            self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
+            if(self.iter % opt.max_iter//10 == 1):
+                self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
+                self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
+                self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
+                self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
+                self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
+                self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
         return mu_pred, std_pred
 
     def save(self, path):
