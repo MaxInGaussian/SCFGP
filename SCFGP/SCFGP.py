@@ -190,8 +190,18 @@ class SCFGP(object):
                 if(len(iter_list) > 100):
                     iter_list.pop(0)
                     cost_list.pop(0)
-                    train_nmse_list.pop(0)
-                    test_nmse_list.pop(0)
+                    if(plot.lower() == 'mae'):
+                        train_mae_list.pop(0)
+                        test_mae_list.pop(0)
+                    elif(plot.lower() == 'nmae'):
+                        train_nmae_list.pop(0)
+                        test_nmae_list.pop(0)
+                    elif(plot.lower() == 'mse'):
+                        train_mse_list.pop(0)
+                        test_mse_list.pop(0)
+                    elif(plot.lower() == 'nmse'):
+                        train_nmse_list.pop(0)
+                        test_nmse_list.pop(0)
                 plot_train_axarr[0].cla()
                 plot_train_axarr[0].plot(iter_list, cost_list,
                     color='r', linewidth=2.0, label='Training COST')
@@ -318,12 +328,9 @@ class SCFGP(object):
         import pickle
         prior_setting = (self.ID, self.seed, self.R, self.M)
         init_objects = (self.X_nml, self.y_nml, self.efd)
-        train_data = (self.X, self.y)
+        train_data = (self.N, self.D)
         matrices = (self.hyper, self.alpha, self.Ri)
-        metrics = (self.SCORE, self.COST, self.TrMAE, self.TrNMAE, self.TrMSE,
-            self.TrNMSE, self.TrTime, self.TsMAE, self.TsMSE,
-            self.TsRMSE, self.TsNMSE, self.TsMNLP)
-        save_pack = [prior_setting, init_objects, train_data, matrices, metrics]
+        save_pack = [prior_setting, init_objects, train_data, matrices]
         with open(path, "wb") as save_f:
             pickle.dump(save_pack, save_f, pickle.HIGHEST_PROTOCOL)
 
@@ -334,13 +341,9 @@ class SCFGP(object):
         self.ID, self.seed, self.R, self.M = load_pack[0]
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
         self.X_nml, self.y_nml, self.efd = load_pack[1]
-        self.X, self.y = load_pack[2]
-        self.N, self.D = self.X.shape
+        self.N, self.D = load_pack[2]
         self.build_theano_model()
         self.hyper, self.alpha, self.Ri = load_pack[3]
-        [self.SCORE, self.COST, self.TrMAE, self.TrNMAE, self.TrMSE,
-            self.TrNMSE, self.TrTime, self.TsMAE, self.TsMSE, self.TsRMSE,
-                self.TsNMSE, self.TsMNLP] = load_pack[4]
 
 
 
