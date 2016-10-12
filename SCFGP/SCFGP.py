@@ -352,9 +352,8 @@ class SCFGP(object):
         import pickle
         prior_setting = (self.ID, self.seed, self.R, self.M)
         init_objects = (self.X_nml, self.y_nml, self.efd)
-        train_data = (self.N, self.D)
         matrices = (self.hyper, self.alpha, self.Ri)
-        save_pack = [prior_setting, init_objects, train_data, matrices]
+        save_pack = [prior_setting, init_objects, self.pred_func, matrices]
         with open(path, "wb") as save_f:
             pickle.dump(save_pack, save_f, pickle.HIGHEST_PROTOCOL)
 
@@ -365,8 +364,7 @@ class SCFGP(object):
         self.ID, self.seed, self.R, self.M = load_pack[0]
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
         self.X_nml, self.y_nml, self.efd = load_pack[1]
-        self.N, self.D = load_pack[2]
-        self.build_theano_model()
+        self.pred_func = load_pack[2]
         self.hyper, self.alpha, self.Ri = load_pack[3]
 
 
