@@ -292,8 +292,11 @@ class SCFGP(object):
                 plt.pause(0.01)
             if(plot_1d):
                 plt.pause(0.05)
-            if(Xv is not None and yv is not None):                
-                return self.COST, self.TsNMSE, dhyper
+            if(Xv is not None and yv is not None):
+                if('mae' in plot.lower()):
+                    return self.COST, self.TsNMAE, dhyper
+                elif('mse' in plot.lower()):
+                    return self.COST, self.TsNMSE, dhyper
             return self.COST, self.TrNMSE, dhyper
         if(plot):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
