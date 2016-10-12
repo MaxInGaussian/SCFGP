@@ -118,7 +118,7 @@ class SCFGP(object):
 
     def init_model(self):
         best_hyper, min_cost = None, np.inf
-        for _ in range(18):
+        for _ in range(1):
             a_b_c = np.random.randn(3)
             l = np.random.rand(2*self.D*self.R)
             f = np.random.rand(2*self.M*self.R)
