@@ -267,10 +267,18 @@ class SCFGP(object):
             if(plot):
                 iter_list.append(iter)
                 cost_list.append(self.COST)
-                train_nmae_list.append(self.TrNMAE)
-                test_nmae_list.append(self.TsNMAE)
-                train_nmse_list.append(self.TrNMSE)
-                test_nmse_list.append(self.TsNMSE)
+                if(plot.lower() == 'mae'):
+                    train_mae_list.append(self.TrMAE)
+                    test_mae_list.append(self.TsMAE)
+                elif(plot.lower() == 'nmae'):
+                    train_nmae_list.append(self.TrNMAE)
+                    test_nmae_list.append(self.TsNMAE)
+                elif(plot.lower() == 'mse'):
+                    train_mse_list.append(self.TrMSE)
+                    test_mse_list.append(self.TsMSE)
+                elif(plot.lower() == 'nmse'):
+                    train_nmse_list.append(self.TrNMSE)
+                    test_nmse_list.append(self.TsNMSE)
                 plt.pause(0.01)
             if(plot_1d):
                 plt.pause(0.05)
