@@ -38,8 +38,6 @@ class SCFGP(object):
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.verbose = verbose
-        self.seed = 1000*int(time.clock()-int(time.clock()))
-        npr.seed(self.seed)
     
     def message(self, *arg):
         if(self.verbose):
