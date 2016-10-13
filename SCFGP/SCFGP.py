@@ -90,8 +90,6 @@ class SCFGP(object):
         disper = noise*(var_f+1)
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
-        mu_z = T.sum(T.mean(Z, axis=1))
-        sig_z = T.sum(T.std(Z, axis=1))
         hermgauss = np.polynomial.hermite.hermgauss(30)
         x = theano.shared(hermgauss[0])[None, None, :]
         w = theano.shared(hermgauss[1]/np.sqrt(np.pi))[None, None, :]
@@ -101,7 +99,7 @@ class SCFGP(object):
         enll = w*nlk
         cost = 2*T.log(T.diagonal(R)).sum()+2*enll.sum()+1./sig2_n*(
                 (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
-        penelty = kl(mu_w, sig_w)+kl(mu_z, sig_z)
+        penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
