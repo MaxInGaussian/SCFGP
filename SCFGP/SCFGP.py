@@ -13,7 +13,6 @@ import theano
 import theano.tensor as T
 import theano.sandbox.linalg as sT
 
-from .EFD import EFD
 from .Optimizers import Optimizer
 from .Normalizers import Normalizer
 
@@ -36,10 +35,11 @@ class SCFGP(object):
     def __init__(self, rank=-1, feature_size=-1, verbose=True):
         self.M = feature_size
         self.R = rank
-        self.efd = EFD("gaussian")
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
         self.verbose = verbose
+        self.seed = 1000*int(time.clock()-int(time.clock()))
+        npr.seed(self.seed)
     
     def message(self, *arg):
         if(self.verbose):
@@ -48,11 +48,9 @@ class SCFGP(object):
     
     def generate_ID(self):
         self.ID = ''.join(
-            chr(np.random.choice([ord(c) for c in (
+            chr(npr.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
-        self.seed = np.prod([ord(c) for c in self.ID])%4294967291
-        npr.seed(self.seed)
     
     def build_theano_model(self):
         epsilon = 1e-6
@@ -94,10 +92,18 @@ class SCFGP(object):
         disper = noise*(var_f+1)
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
-        gauss_enll = self.efd.ExpectedNegLogLik(y, mu_f, var_f, disper)
-        cost = 2*T.log(T.diagonal(R)).sum()+2*gauss_enll+1./sig2_n*(
+        mu_z = T.sum(T.mean(Z, axis=1))
+        sig_z = T.sum(T.std(Z, axis=1))
+        hermgauss = np.polynomial.hermite.hermgauss(30)
+        x = theano.shared(hermgauss[0])[None, None, :]
+        w = theano.shared(hermgauss[1]/np.sqrt(np.pi))[None, None, :]
+        herm_f = T.sqrt(2*var_f[:, :, None])*x+mu_f[:, :, None]
+        nlk = (0.5*herm_f**2.-y[:, :, None]*herm_f)/disper[:, :, None]+0.5*(
+            T.log(2*np.pi*disper[:, :, None])+y[:, :, None]**2/disper[:, :, None])
+        enll = w*nlk
+        cost = 2*T.log(T.diagonal(R)).sum()+2*enll.sum()+1./sig2_n*(
                 (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
-        penelty = kl(mu_w, sig_w)
+        penelty = kl(mu_w, sig_w)+kl(mu_z, sig_z)
         cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
@@ -117,19 +123,11 @@ class SCFGP(object):
         self.pred_func = theano.function(pred_input, pred_output)
 
     def init_model(self):
-        best_hyper, min_cost = None, np.inf
-        for _ in range(1):
-            a_b_c = np.random.randn(3)
-            l = np.random.rand(2*self.D*self.R)
-            f = np.random.rand(2*self.M*self.R)
-            theta = 2*np.pi*np.random.rand(self.M+self.R)
-            hyper = np.concatenate((a_b_c, l, f, theta))
-            alpha, Ri, mu_f, cost, _ =\
-                self.train_func(self.X, self.y, hyper)
-            if(cost < min_cost):
-                min_cost = cost
-                best_hyper = hyper.copy()
-        self.hyper = best_hyper.copy()
+        a_b_c = npr.randn(3)
+        l = npr.rand(2*self.D*self.R)
+        f = npr.rand(2*self.M*self.R)
+        theta = 2*np.pi*npr.rand(self.M+self.R)
+        self.hyper = np.concatenate((a_b_c, l, f, theta))
         self.alpha, self.Ri, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
@@ -313,7 +311,7 @@ class SCFGP(object):
         train_finish_time = time.time()
         self.TrTime = train_finish_time-train_start_time
         self.message("-"*14, "TRAINING RESULT", "-"*14)
-        self.message(self.NAME, " COST = %.4f"%(self.COST))
+        self.message(self.NAME, "   COST = %.4f"%(self.COST))
         self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
         self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
         self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
@@ -350,22 +348,19 @@ class SCFGP(object):
 
     def save(self, path):
         import pickle
-        prior_setting = (self.ID, self.seed, self.R, self.M)
-        init_objects = (self.X_nml, self.y_nml, self.efd)
-        matrices = (self.hyper, self.alpha, self.Ri)
-        save_pack = [prior_setting, init_objects, self.pred_func, matrices]
+        save_vars = ['ID', 'R', 'M', 'X_nml', 'y_nml',
+            'pred_func', 'hyper', 'alpha', 'Ri']
+        save_dict = {varn: self.__dict__[varn] for varn in save_vars}
         with open(path, "wb") as save_f:
-            pickle.dump(save_pack, save_f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(save_dict, save_f, pickle.HIGHEST_PROTOCOL)
 
     def load(self, path):
         import pickle
         with open(path, "rb") as load_f:
-            load_pack = pickle.load(load_f)
-        self.ID, self.seed, self.R, self.M = load_pack[0]
+            load_dict = pickle.load(load_f)
+        for varn, var in load_dict.items():
+            self.__dict__[varn] = var
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
-        self.X_nml, self.y_nml, self.efd = load_pack[1]
-        self.pred_func = load_pack[2]
-        self.hyper, self.alpha, self.Ri = load_pack[3]
 
 
 
