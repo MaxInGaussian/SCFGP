@@ -62,13 +62,13 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > self.max_cvrg_iter*0.5):
+            if(cvrg_iter > self.max_cvrg_iter*0.3):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
             if(i > self.max_cvrg_iter*5 and cvrg_iter > self.max_cvrg_iter):
                 break
-            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+            elif(cvrg_iter > self.max_cvrg_iter*0.3):
                 randp = np.random.rand()
                 x = randp*x+(1-randp)*argmin_x
             v = m*v-(1.0-m)*g
@@ -102,13 +102,13 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > self.max_cvrg_iter*0.5):
+            if(cvrg_iter > self.max_cvrg_iter*0.3):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
             if(i > self.max_cvrg_iter*5 and cvrg_iter > self.max_cvrg_iter):
                 break
-            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+            elif(cvrg_iter > self.max_cvrg_iter*0.3):
                 randp = np.random.rand()
                 x = randp*x+(1-randp)*argmin_x
             avg_sq_grad = avg_sq_grad*gamma+g**2*(1-gamma)
@@ -143,13 +143,13 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > self.max_cvrg_iter*0.5):
+            if(cvrg_iter > self.max_cvrg_iter*0.3):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
             if(i > self.max_cvrg_iter*5 and cvrg_iter > self.max_cvrg_iter):
                 break
-            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+            elif(cvrg_iter > self.max_cvrg_iter*0.3):
                 randp = np.random.rand()
                 x = randp*x+(1-randp)*argmin_x
             m = (1-b1)*g+b1*m
@@ -193,13 +193,13 @@ class Optimizer(object):
                 argmin_x = x.copy()
             else:
                 cvrg_iter += 1
-            if(cvrg_iter > self.max_cvrg_iter*0.5):
+            if(cvrg_iter > self.max_cvrg_iter*0.3):
                 adjust_step = False
             if(f < min_f):
                 min_f = f
             if(i > self.max_cvrg_iter*5 and cvrg_iter > self.max_cvrg_iter):
                 break
-            elif(cvrg_iter > self.max_cvrg_iter*0.5):
+            elif(cvrg_iter > self.max_cvrg_iter*0.3):
                 randp = np.random.rand()
                 x = randp*x+(1-randp)*argmin_x
             r = 1/(m+1)
