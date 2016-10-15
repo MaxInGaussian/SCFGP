@@ -92,7 +92,7 @@ class SCFGP(object):
             T.log(2*np.pi*disper[:, :, None])+y[:, :, None]**2/disper[:, :, None])
         enll = w*nlk
         cost = 2*T.log(T.diagonal(R)).sum()+2*enll.sum()+1./sig2_n*(
-                abs(y).sum()-abs(beta).sum())+2*(N-self.M)*a
+                (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
         penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
