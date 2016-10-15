@@ -64,20 +64,14 @@ class SCFGP(object):
         sig_n, sig_f = T.exp(a), T.exp(b)
         sig2_n, sig2_f = sig_n**2, sig_f**2
         noise = T.log(1+T.exp(c))
-        l = hyper[t_ind:t_ind+2*self.D*self.R];t_ind+=2*self.D*self.R
-        L = T.reshape(l[self.D*self.R:], (self.D, self.R))
-        Z_L = T.reshape(l[:self.D*self.R], (self.D, self.R))
-        f = hyper[t_ind:t_ind+2*self.M*self.R];t_ind+=2*self.M*self.R
-        F = T.reshape(f[:self.M*self.R], (self.M, self.R))
-        Z_F = T.reshape(f[self.M*self.R:], (self.M, self.R))
-        Omega = L.dot(F.T)
-        Z = Z_L.dot(Z_F.T)
-        theta = hyper[t_ind:t_ind+self.M+self.R];t_ind+=self.M+self.R
-        Theta = T.reshape(theta[:self.M], (1, self.M))
-        Theta_L = T.reshape(theta[self.M:], (1, self.R))
+        omega = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
+        Omega = T.reshape(omega, (self.D, self.M))
+        z = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
+        Z = T.reshape(z, (self.D, self.M))
+        theta = hyper[t_ind:t_ind+self.M];t_ind+=self.M
+        Theta = T.reshape(theta, (1, self.M))
         FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        FF_L = T.dot(X, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        Phi = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FF, FF_L), 1))
+        Phi = sig_f*T.sqrt(2./self.M)*T.cos(FF)
         PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
@@ -108,8 +102,7 @@ class SCFGP(object):
         train_output_name = ['alpha', 'Ri', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(train_input, train_output)
         FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        FFs_L = T.dot(Xs, L)+(Theta_L-T.sum(Z_L*L, 0)[None, :])
-        Phis = sig_f*T.sqrt(2./self.M)*T.cos(T.concatenate((FFs, FFs_L), 1))
+        Phis = sig_f*T.sqrt(2./self.M)*T.cos(FFs)
         mu_pred = T.dot(Phis, alpha)
         std_pred = (noise*(1+(T.dot(Phis, Ri.T)**2).sum(1)))**0.5
         pred_input = [Xs, hyper, alpha, Ri]
@@ -120,10 +113,10 @@ class SCFGP(object):
 
     def init_model(self):
         a_b_c = npr.randn(3)
-        l = npr.rand(2*self.D*self.R)
-        f = npr.rand(2*self.M*self.R)
-        theta = 2*np.pi*npr.rand(self.M+self.R)
-        self.hyper = np.concatenate((a_b_c, l, f, theta))
+        omega = npr.randn(self.D*self.M)
+        z = npr.randn(self.D*self.M)
+        theta = 2*np.pi*npr.rand(self.M)
+        self.hyper = np.concatenate((a_b_c, omega, z, theta))
         self.alpha, self.Ri, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
