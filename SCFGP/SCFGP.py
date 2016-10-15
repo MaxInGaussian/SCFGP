@@ -32,8 +32,8 @@ class SCFGP(object):
     X, y, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*8
     SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
-    def __init__(self, rank=-1, feature_size=-1, verbose=True):
-        self.M = feature_size
+    def __init__(self, rank=-1, nfeats=-1, verbose=True):
+        self.M = nfeats
         self.R = rank
         self.X_nml = Normalizer("linear")
         self.y_nml = Normalizer("standardize")
@@ -92,7 +92,7 @@ class SCFGP(object):
             T.log(2*np.pi*disper[:, :, None])+y[:, :, None]**2/disper[:, :, None])
         enll = w*nlk
         cost = 2*T.log(T.diagonal(R)).sum()+2*enll.sum()+1./sig2_n*(
-                (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
+                abs(y).sum()-abs(beta).sum())+2*(N-self.M)*a
         penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
@@ -249,8 +249,8 @@ class SCFGP(object):
             self.alpha, self.Ri, mu_f, self.COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_nml.backward_transform(mu_f)
-            self.TrMAE = np.mean(np.abs(self.mu_f-y))
-            self.TrNMAE = self.TrMAE/np.std(y)
+            self.TrMAE = np.mean(np.abs(np.exp(self.mu_f)-np.exp(y)))
+            self.TrNMAE = self.TrMAE/np.std(np.exp(y))
             self.TrMSE = np.mean((self.mu_f-y)**2.)
             self.TrNMSE = self.TrMSE/np.var(y)
             if(self.iter%(self.opt.max_iter//10) == 1):
@@ -290,7 +290,7 @@ class SCFGP(object):
                         return self.COST, self.TsNMAE, dhyper
                     elif('mse' in plot.lower()):
                         return self.COST, self.TsNMSE, dhyper
-                return self.COST, self.TsNMSE, dhyper
+                return self.COST, self.TsNMAE, dhyper
             return self.COST, self.TrNMSE, dhyper
         if(plot):
             ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
@@ -319,8 +319,8 @@ class SCFGP(object):
         mu_pred = self.y_nml.backward_transform(mu_pred)
         std_pred = std_pred[:, None]*self.y_nml.data["std"]
         if(ys is not None):
-            self.TsMAE = np.mean(np.abs(mu_pred-ys))
-            self.TsNMAE = self.TsMAE/np.std(ys)
+            self.TsMAE = np.mean(np.abs(np.exp(mu_pred)-np.exp(ys)))
+            self.TsNMAE = self.TsMAE/np.std(np.exp(ys))
             self.TsMSE = np.mean((mu_pred-ys)**2.)
             self.TsNMSE = self.TsMSE/np.var(ys)
             self.TsMNLP = 0.5*np.mean(((ys-mu_pred)/\
