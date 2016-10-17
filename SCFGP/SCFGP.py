@@ -7,14 +7,12 @@
 import sys, os, string, time
 import numpy as np
 import numpy.random as npr
-import matplotlib.pyplot as plt
-import matplotlib.animation as anm
 import theano
 import theano.tensor as T
 import theano.sandbox.linalg as sT
 
-from .Optimizers import Optimizer
-from .Normalizers import Normalizer
+from .Scaler import Scaler
+from .Optimizer import Optimizer
 
 theano.config.mode = 'FAST_RUN'
 theano.config.optimizer = 'fast_run'
@@ -27,16 +25,27 @@ class SCFGP(object):
     """
 
     ID, NAME, seed, verbose = "", "", None, True
-    freq_kern, iduc_kern, X_nml, y_nml = [None]*4
+    freq_kern, iduc_kern, X_scaler, y_scaler = [None]*4
     R, M, N, D, FKP, IKP = -1, -1, -1, -1, -1, -1
     X, y, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*8
-    SCORE, COST, TrMSE, TrNMSE, TsMAE, TsMSE, TsRMSE, TsNMSE, TsMNLP = [0]*9
     
-    def __init__(self, rank=-1, nfeats=-1, verbose=True):
+    
+    def __init__(self, rank=-1, nfeats=-1, evals=None,
+        X_scaling_method='min-max', y_scaling_method='normal', verbose=True):
         self.M = nfeats
         self.R = rank
-        self.X_nml = Normalizer("linear")
-        self.y_nml = Normalizer("standardize")
+        self.X_scaler = Scaler(X_scaling_method)
+        self.y_scaler = Scaler(y_scaling_method)
+        self.evals = {
+            "SCORE": ["Model Selection Score", []],
+            "COST": ["Hyperparameter Selection Cost", []],
+            "MAE": ["Mean Absolute Error", []],
+            "NMAE": ["Normalized Mean Absolute Error", []],
+            "MSE": ["Mean Square Error", []],
+            "NMSE": ["Normalized Mean Square Error", []],
+            "MNLP": ["Mean Negative Log Probability", []],
+            "TIME(s)": ["Training Time", []],
+        } if evals is None else evals
         self.verbose = verbose
     
     def message(self, *arg):
@@ -71,7 +80,7 @@ class SCFGP(object):
         theta = hyper[t_ind:t_ind+self.M];t_ind+=self.M
         Theta = T.reshape(theta, (1, self.M))
         FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        Phi = sig_f*T.sqrt(2./self.M)*T.cos(FF)
+        Phi = sig_f*T.sqrt(2./self.M)*T.concatenate((T.cos(FF), T.sin(FF)), 1)
         PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
         R = sT.cholesky(A)
@@ -102,7 +111,7 @@ class SCFGP(object):
         train_output_name = ['alpha', 'Ri', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(train_input, train_output)
         FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        Phis = sig_f*T.sqrt(2./self.M)*T.cos(FFs)
+        Phis = sig_f*T.sqrt(2./self.M)*T.concatenate((T.cos(FFs), T.sin(FFs)), 1)
         mu_pred = T.dot(Phis, alpha)
         std_pred = (noise*(1+(T.dot(Phis, Ri.T)**2).sum(1)))**0.5
         pred_input = [Xs, hyper, alpha, Ri]
@@ -120,14 +129,15 @@ class SCFGP(object):
         self.alpha, self.Ri, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
-    def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, callback=None,
-        plot='mae', plot_1d=False):
+    def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, vis=None):
+        for metric in self.evals.keys():
+            self.evals[metric][1] = []
         self.opt = opt
         self.message("-"*50, "\nNormalizing SCFGP training data...")
-        self.X_nml.fit(X)
-        self.y_nml.fit(y)
-        self.X = self.X_nml.forward_transform(X)
-        self.y = self.y_nml.forward_transform(y)
+        self.X_scaler.fit(X)
+        self.y_scaler.fit(y)
+        self.X = self.X_scaler.forward_transform(X)
+        self.y = self.y_scaler.forward_transform(y)
         self.message("done.")
         self.N, self.D = self.X.shape
         if(self.M == -1):
@@ -142,8 +152,8 @@ class SCFGP(object):
         else:
             self.train_func, self.pred_func = funcs
         if(Xv is not None and yv is not None):
-            self.Xv = self.X_nml.forward_transform(Xv)
-            self.yv = self.y_nml.forward_transform(yv)
+            self.Xv = self.X_scaler.forward_transform(Xv)
+            self.yv = self.y_scaler.forward_transform(yv)
         else:
             plot = False
         train_start_time = time.time()
@@ -151,193 +161,55 @@ class SCFGP(object):
         self.init_model()
         self.message("done.")
         if(self.opt is None):
-            self.opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 10, 1e-4, True)
-        plt.close()
-        if(plot):
-            iter_list = []
-            cost_list = []
-            if(plot.lower() == 'mae'):
-                train_mae_list = []
-                test_mae_list = []
-            elif(plot.lower() == 'nmae'):
-                train_nmae_list = []
-                test_nmae_list = []
-            elif(plot.lower() == 'mse'):
-                train_mse_list = []
-                test_mse_list = []
-            elif(plot.lower() == 'nmse'):
-                train_nmse_list = []
-                test_nmse_list = []
-            plot_train_fig, plot_train_axarr = plt.subplots(
-                2, figsize=(8, 6), facecolor='white', dpi=120)
-            plot_train_fig.suptitle(self.NAME, fontsize=15)
-            plt.xlabel('# iteration', fontsize=13)
-        if(plot_1d):
-            plot_1d_fig = plt.figure(facecolor='white', dpi=120)
-            plot_1d_fig.suptitle(self.NAME, fontsize=15)
-            plot_1d_ax = plot_1d_fig.add_subplot(111)
-        def animate(i):
-            if(plot):
-                if(len(iter_list) > 100):
-                    iter_list.pop(0)
-                    cost_list.pop(0)
-                    if(plot.lower() == 'mae'):
-                        train_mae_list.pop(0)
-                        test_mae_list.pop(0)
-                    elif(plot.lower() == 'nmae'):
-                        train_nmae_list.pop(0)
-                        test_nmae_list.pop(0)
-                    elif(plot.lower() == 'mse'):
-                        train_mse_list.pop(0)
-                        test_mse_list.pop(0)
-                    elif(plot.lower() == 'nmse'):
-                        train_nmse_list.pop(0)
-                        test_nmse_list.pop(0)
-                plot_train_axarr[0].cla()
-                plot_train_axarr[0].plot(iter_list, cost_list,
-                    color='r', linewidth=2.0, label='Training COST')
-                plot_train_axarr[1].cla()
-                if(plot.lower() == 'mae'):
-                    plot_train_axarr[1].plot(iter_list, train_mae_list,
-                        color='b', linewidth=2.0, label='Training MAE')
-                    plot_train_axarr[1].plot(iter_list, test_mae_list,
-                        color='g', linewidth=2.0, label='Validation MAE')
-                elif(plot.lower() == 'nmae'):
-                    plot_train_axarr[1].plot(iter_list, train_nmae_list,
-                        color='b', linewidth=2.0, label='Training NMAE')
-                    plot_train_axarr[1].plot(iter_list, test_nmae_list,
-                        color='g', linewidth=2.0, label='Validation NMAE')
-                elif(plot.lower() == 'mse'):
-                    plot_train_axarr[1].plot(iter_list, train_mse_list,
-                        color='b', linewidth=2.0, label='Training MSE')
-                    plot_train_axarr[1].plot(iter_list, test_mse_list,
-                        color='g', linewidth=2.0, label='Validation MSE')
-                elif(plot.lower() == 'nmse'):
-                    plot_train_axarr[1].plot(iter_list, train_nmse_list,
-                        color='b', linewidth=2.0, label='Training NMSE')
-                    plot_train_axarr[1].plot(iter_list, test_nmse_list,
-                        color='g', linewidth=2.0, label='Validation NMSE')
-                handles, labels = plot_train_axarr[0].get_legend_handles_labels()
-                plot_train_axarr[0].legend(handles, labels, loc='upper center',
-                    bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
-                handles, labels = plot_train_axarr[1].get_legend_handles_labels()
-                plot_train_axarr[1].legend(handles, labels, loc='upper center',
-                    bbox_to_anchor=(0.5, 1.05), ncol=2, fancybox=True)
-            if(plot_1d):
-                plot_1d_ax.cla()
-                pts = 300
-                errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
-                Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
-                mu, std = self.pred_func(
-                    Xplot, self.hyper, self.alpha, self.Ri)
-                mu = mu.ravel()
-                std = std.ravel()
-                for er in errors:
-                    plot_1d_ax.fill_between(Xplot[:, 0], mu-er*std, mu+er*std,
-                                    alpha=((3-er)/5.5)**1.7, facecolor='blue',
-                                    linewidth=0.0)
-                plot_1d_ax.plot(Xplot[:, 0], mu, alpha=0.8, c='black')
-                plot_1d_ax.errorbar(self.X[:, 0],
-                    self.y.ravel(), fmt='r.', markersize=5, alpha=0.6)
-                yrng = self.y.max()-self.y.min()
-                plot_1d_ax.set_ylim([
-                    self.y.min()-0.5*yrng, self.y.max() + 0.5*yrng])
-                plot_1d_ax.set_xlim([-0.1, 1.1])
+            self.opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 18, 1e-5, True)
+        if(vis is not None):
+            vis.train_with_plot()
         def train(iter, hyper):
-            self.iter = iter
             self.hyper = hyper.copy()
-            self.alpha, self.Ri, mu_f, self.COST, dhyper =\
+            self.alpha, self.Ri, mu_f, COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
-            self.mu_f = self.y_nml.backward_transform(mu_f)
-            self.TrMAE = np.mean(np.abs(np.exp(self.mu_f)-np.exp(y)))
-            self.TrNMAE = self.TrMAE/np.std(np.exp(y))
-            self.TrMSE = np.mean((self.mu_f-y)**2.)
-            self.TrNMSE = self.TrMSE/np.var(y)
-            if(self.iter%(self.opt.max_iter//10) == 1):
-                self.message("-"*14, "TRAINING ITERATION", iter, "-"*14)
-                self.message(self.NAME, "   COST = %.4f"%(self.COST))
-                self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
-                self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
-                self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
-                self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
+            self.mu_f = self.y_scaler.backward_transform(mu_f)
+            self.evals['COST'][1].append(COST)
+            self.evals['TIME(s)'][1].append(time.time()-train_start_time)
             if(Xv is not None and yv is not None):
                 self.predict(Xv, yv)
-            if(callback is not None):
-                callback()
             if(iter == -1):
                 return
-            if(plot):
-                iter_list.append(iter)
-                cost_list.append(self.COST)
-                if(plot.lower() == 'mae'):
-                    train_mae_list.append(self.TrMAE)
-                    test_mae_list.append(self.TsMAE)
-                elif(plot.lower() == 'nmae'):
-                    train_nmae_list.append(self.TrNMAE)
-                    test_nmae_list.append(self.TsNMAE)
-                elif(plot.lower() == 'mse'):
-                    train_mse_list.append(self.TrMSE)
-                    test_mse_list.append(self.TsMSE)
-                elif(plot.lower() == 'nmse'):
-                    train_nmse_list.append(self.TrNMSE)
-                    test_nmse_list.append(self.TsNMSE)
-                plt.pause(0.01)
-            if(plot_1d):
+            if(vis is not None):
                 plt.pause(0.05)
             if(Xv is not None and yv is not None):
-                if(plot):
-                    if('mae' in plot.lower()):
-                        return self.COST, self.TsNMAE, dhyper
-                    elif('mse' in plot.lower()):
-                        return self.COST, self.TsNMSE, dhyper
-                return self.COST, self.TsNMAE, dhyper
-            return self.COST, self.TrNMSE, dhyper
-        if(plot):
-            ani = anm.FuncAnimation(plot_train_fig, animate, interval=500)
-        if(plot_1d):
-            ani = anm.FuncAnimation(plot_1d_fig, animate, interval=500)
+                return COST, self.evals['NMSE'][1][-1], dhyper
+            return COST, COST, dhyper
         self.opt.run(train, self.hyper)
-        train_finish_time = time.time()
-        self.TrTime = train_finish_time-train_start_time
         self.message("-"*14, "TRAINING RESULT", "-"*14)
-        self.message(self.NAME, "   COST = %.4f"%(self.COST))
-        self.message(self.NAME, "  TrMAE = %.4f"%(self.TrMAE))
-        self.message(self.NAME, " TrNMAE = %.4f"%(self.TrNMAE))
-        self.message(self.NAME, "  TrMSE = %.4f"%(self.TrMSE))
-        self.message(self.NAME, " TrNMSE = %.4f"%(self.TrNMSE))
-        self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
-        self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
-        self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
-        self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
-        self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
-        self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
+        self._print_current_evals()
         self.message("="*60)
 
     def predict(self, Xs, ys=None):
-        mu_pred, std_pred = self.pred_func(
-            self.X_nml.forward_transform(Xs), self.hyper, self.alpha, self.Ri)
-        mu_pred = self.y_nml.backward_transform(mu_pred)
-        std_pred = std_pred[:, None]*self.y_nml.data["std"]
+        mu_f, std_f = self.pred_func(
+            self.X_scaler.forward_transform(Xs), self.hyper, self.alpha, self.Ri)
+        mu_y = self.y_scaler.backward_transform(mu_f)
+        up_bnd_f = self.y_scaler.backward_transform(mu_f+std_f[:, None])
+        lw_bnd_f = self.y_scaler.backward_transform(mu_f-std_f[:, None])
+        std_y = (up_bnd_f*lw_bnd_f)**0.5
         if(ys is not None):
-            self.TsMAE = np.mean(np.abs(np.exp(mu_pred)-np.exp(ys)))
-            self.TsNMAE = self.TsMAE/np.std(np.exp(ys))
-            self.TsMSE = np.mean((mu_pred-ys)**2.)
-            self.TsNMSE = self.TsMSE/np.var(ys)
-            self.TsMNLP = 0.5*np.mean(((ys-mu_pred)/\
-                std_pred)**2+np.log(2*np.pi*std_pred**2))
-            self.SCORE = np.exp(-self.TsMNLP)/self.TsNMSE
-            if(self.iter%(self.opt.max_iter//10) == 1):
-                self.message(self.NAME, "  TsMAE = %.4f"%(self.TsMAE))
-                self.message(self.NAME, " TsNMAE = %.4f"%(self.TsNMAE))
-                self.message(self.NAME, "  TsMSE = %.4f"%(self.TsMSE))
-                self.message(self.NAME, " TsNMSE = %.4f"%(self.TsNMSE))
-                self.message(self.NAME, " TsMNLP = %.4f"%(self.TsMNLP))
-                self.message(self.NAME, "  SCORE = %.4f"%(self.SCORE))
-        return mu_pred, std_pred
+            self.evals['MAE'][1].append(np.mean(np.abs(mu_y-ys)))
+            self.evals['NMAE'][1].append(self.evals['MAE'][1][-1]/np.std(ys))
+            self.evals['MSE'][1].append(np.mean((mu_y-ys)**2.))
+            self.evals['NMSE'][1].append(self.evals['MSE'][1][-1]/np.var(ys))
+            self.evals['MNLP'][1].append(0.5*np.mean(((
+                ys-mu_y)/std_y)**2+np.log(2*np.pi*std_y**2)))
+            self.evals['SCORE'][1].append(np.exp(
+                -self.evals['MNLP'][1][-1])/self.evals['NMSE'][1][-1])
+            n_iter = len(self.evals['COST'][1])
+            if(n_iter%(self.opt.max_iter//10) == 1):
+                self.message("-"*11, "VALIDATION ITERATION", n_iter, "-"*11)
+                self._print_current_evals()
+        return mu_y, std_y
 
     def save(self, path):
         import pickle
-        save_vars = ['ID', 'R', 'M', 'X_nml', 'y_nml',
+        save_vars = ['ID', 'R', 'M', 'X_scaler', 'y_scaler',
             'pred_func', 'hyper', 'alpha', 'Ri']
         save_dict = {varn: self.__dict__[varn] for varn in save_vars}
         with open(path, "wb") as save_f:
@@ -351,7 +223,15 @@ class SCFGP(object):
             self.__dict__[varn] = var
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
 
-
+    def _print_current_evals(self):
+        self.message(self.NAME, "   TIME = %.4f"%(self.evals['TIME(s)'][1][-1]))
+        self.message(self.NAME, "  SCORE = %.4f"%(self.evals['SCORE'][1][-1]))
+        self.message(self.NAME, "   COST = %.4f"%(self.evals['COST'][1][-1]))
+        self.message(self.NAME, "    MAE = %.4f"%(self.evals['MAE'][1][-1]))
+        self.message(self.NAME, "   NMAE = %.4f"%(self.evals['NMAE'][1][-1]))
+        self.message(self.NAME, "    MSE = %.4f"%(self.evals['MSE'][1][-1]))
+        self.message(self.NAME, "   NMSE = %.4f"%(self.evals['NMSE'][1][-1]))
+        self.message(self.NAME, "   MNLP = %.4f"%(self.evals['MNLP'][1][-1]))
 
 
 

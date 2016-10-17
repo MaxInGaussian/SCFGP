@@ -5,5 +5,6 @@
 ################################################################################
 
 from .SCFGP import SCFGP
-from .Optimizers import Optimizer
-from .Normalizers import Normalizer
+from .Optimizer import Optimizer
+from .Scaler import Scaler
+from .Visualizer import Visualizer
