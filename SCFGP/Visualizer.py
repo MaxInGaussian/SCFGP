@@ -13,9 +13,10 @@ class Visualizer(object):
     
     model, fig = None, None
     
-    def __init__(self, fig, eval='NMSE'):
+    def __init__(self, fig, eval='NMSE', plot_limit=150):
         self.fig = fig
         self.eval = eval
+        self.plot_limit = plot_limit
     
     def train_with_plot(self):
         if(self.model.D == 1):
@@ -55,15 +56,15 @@ class Visualizer(object):
         plt.xlabel('TIME(s)', fontsize=13)
         def animate(i):
             ax1.cla()
-            ax1.plot(self.model.evals['TIME(s)'][1],
-                self.model.evals['COST'][1],
+            ax1.plot(self.model.evals['TIME(s)'][1][-self.plot_limit:],
+                self.model.evals['COST'][1][-self.plot_limit:],
                 color='r', linewidth=2.0, label='COST')
             handles, labels = ax1.get_legend_handles_labels()
             ax1.legend(handles, labels, loc='upper center',
                 bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
             ax2.cla()
-            ax2.plot(self.model.evals['TIME(s)'][1],
-                self.model.evals[self.eval.upper()][1],
+            ax2.plot(self.model.evals['TIME(s)'][1][-self.plot_limit:],
+                self.model.evals[self.eval.upper()][1][-self.plot_limit:],
                 color='b', linewidth=2.0, label=self.eval.upper())
             handles, labels = ax2.get_legend_handles_labels()
             ax2.legend(handles, labels, loc='upper center',

@@ -180,9 +180,9 @@ class SCFGP(object):
             if(iter%(self.opt.max_iter//10) == 1):
                 self.message("-"*12, "VALIDATION ITERATION", iter, "-"*12)
                 self._print_current_evals()
-            if(vis is not None and iter%(self.opt.max_iter//3) == 1):
+            if(vis is not None and iter%(self.opt.max_iter//2) == 1):
                 animate(iter)
-                plt.pause(0.05)
+                plt.pause(0.1)
             if(Xv is not None and yv is not None):
                 return COST, self.evals['NMSE'][1][-1], dhyper
             return COST, COST, dhyper
