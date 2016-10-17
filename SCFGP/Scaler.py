@@ -76,7 +76,7 @@ class Scaler(object):
         elif(self.method == "normal"):
             return X*self.data["std"]+self.data["mu"]
         elif(self.method == "log-normal"):
-            return np.exp(X*self.data["std"]+self.data["mu"])
+            return np.exp(X*self.data["log-std"]+self.data["log-mu"])
         elif(self.method == "sigmoid"):
             return (np.log(1+X)-np.log(1-X))/2.*self.data["std"]+self.data["mu"]
         elif(self.method == "log-sigmoid"):
