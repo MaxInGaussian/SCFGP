@@ -7,6 +7,7 @@
 import sys, os, string, time
 import numpy as np
 import numpy.random as npr
+import matplotlib.pyplot as plt 
 import theano
 import theano.tensor as T
 import theano.sandbox.linalg as sT
@@ -163,25 +164,30 @@ class SCFGP(object):
         if(self.opt is None):
             self.opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 18, 1e-5, True)
         if(vis is not None):
-            vis.train_with_plot()
+            vis.model = self
+            animate = vis.train_with_plot()
         def train(iter, hyper):
             self.hyper = hyper.copy()
             self.alpha, self.Ri, mu_f, COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_scaler.backward_transform(mu_f)
-            self.evals['COST'][1].append(COST)
+            self.evals['COST'][1].append(np.double(COST))
             self.evals['TIME(s)'][1].append(time.time()-train_start_time)
             if(Xv is not None and yv is not None):
                 self.predict(Xv, yv)
             if(iter == -1):
                 return
+            if(iter%(self.opt.max_iter//10) == 1):
+                self.message("-"*12, "VALIDATION ITERATION", iter, "-"*12)
+                self._print_current_evals()
             if(vis is not None):
+                animate(iter)
                 plt.pause(0.05)
             if(Xv is not None and yv is not None):
                 return COST, self.evals['NMSE'][1][-1], dhyper
             return COST, COST, dhyper
         self.opt.run(train, self.hyper)
-        self.message("-"*14, "TRAINING RESULT", "-"*14)
+        self.message("-"*16, "TRAINING RESULT", "-"*16)
         self._print_current_evals()
         self.message("="*60)
 
@@ -191,7 +197,7 @@ class SCFGP(object):
         mu_y = self.y_scaler.backward_transform(mu_f)
         up_bnd_f = self.y_scaler.backward_transform(mu_f+std_f[:, None])
         lw_bnd_f = self.y_scaler.backward_transform(mu_f-std_f[:, None])
-        std_y = (up_bnd_f*lw_bnd_f)**0.5
+        std_y = (up_bnd_f-lw_bnd_f)*0.5
         if(ys is not None):
             self.evals['MAE'][1].append(np.mean(np.abs(mu_y-ys)))
             self.evals['NMAE'][1].append(self.evals['MAE'][1][-1]/np.std(ys))
@@ -201,16 +207,12 @@ class SCFGP(object):
                 ys-mu_y)/std_y)**2+np.log(2*np.pi*std_y**2)))
             self.evals['SCORE'][1].append(np.exp(
                 -self.evals['MNLP'][1][-1])/self.evals['NMSE'][1][-1])
-            n_iter = len(self.evals['COST'][1])
-            if(n_iter%(self.opt.max_iter//10) == 1):
-                self.message("-"*11, "VALIDATION ITERATION", n_iter, "-"*11)
-                self._print_current_evals()
         return mu_y, std_y
 
     def save(self, path):
         import pickle
         save_vars = ['ID', 'R', 'M', 'X_scaler', 'y_scaler',
-            'pred_func', 'hyper', 'alpha', 'Ri']
+            'pred_func', 'hyper', 'alpha', 'Ri', 'evals']
         save_dict = {varn: self.__dict__[varn] for varn in save_vars}
         with open(path, "wb") as save_f:
             pickle.dump(save_dict, save_f, pickle.HIGHEST_PROTOCOL)

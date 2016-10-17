@@ -67,8 +67,8 @@ for feature_size in feature_size_choices:
     results = {en:[] for en in evals.keys()}
     for round in range(trials_per_model):
         X_train, y_train, X_valid, y_valid = load_boston_data()
-        model = SCFGP(-1, feature_size, verbose=False)
-        vis = Visualizer(model, plt.figure(), 'mse')
+        model = SCFGP(-1, feature_size, verbose=True)
+        vis = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
         if(funcs is None):
             model.fit(X_train, y_train, X_valid, y_valid, vis=vis)
             funcs = (model.train_func, model.pred_func)

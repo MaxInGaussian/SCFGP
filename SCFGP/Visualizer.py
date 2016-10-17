@@ -5,8 +5,7 @@
 ################################################################################
 
 import numpy as np
-import matplotlib.pyplot as plt 
-import matplotlib.animation as anm
+import matplotlib.pyplot as plt
 
 class Visualizer(object):
     
@@ -14,21 +13,17 @@ class Visualizer(object):
     
     model, fig = None, None
     
-    def __init__(self, model, fig, eval='NMSE'):
-        self.model = model
+    def __init__(self, fig, eval='NMSE'):
         self.fig = fig
-        self.fig.figsize = (8, 6)
-        self.fig.facecolor = 'white'
         self.eval = eval
     
     def train_with_plot(self):
         if(self.model.D == 1):
-            self.train_with_1d_plot()
+            return self.train_with_1d_plot()
         else:
-            self.train_with_eval_plot()
+            return self.train_with_eval_plot()
     
     def train_with_1d_plot(self):
-        self.fig.clf()
         self.fig.suptitle(self.model.NAME, fontsize=15)
         ax = self.fig.add_subplot(111)
         def animate(i):
@@ -51,26 +46,26 @@ class Visualizer(object):
             ax.set_ylim([
                 self.model.y.min()-0.5*yrng, self.model.y.max() + 0.5*yrng])
             ax.set_xlim([-0.1, 1.1])
-        ani = anm.FuncAnimation(self.fig, animate, interval=1000)
+        return animate
     
     def train_with_eval_plot(self):
-        self.fig.clf()
         self.fig.suptitle(self.model.NAME, fontsize=15)
         ax1 = self.fig.add_subplot(211)
         ax2 = self.fig.add_subplot(212)
-        plt.xlabel('# iteration', fontsize=13)
+        plt.xlabel('TIME(s)', fontsize=13)
         def animate(i):
-            iter_axis = np.arange(len(self.model.evals['COST'][1]))
             ax1.cla()
-            ax1.plot(iter_axis, self.model.evals['COST'][1],
+            ax1.plot(self.model.evals['TIME(s)'][1],
+                self.model.evals['COST'][1],
                 color='r', linewidth=2.0, label='COST')
             handles, labels = ax1.get_legend_handles_labels()
             ax1.legend(handles, labels, loc='upper center',
                 bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
             ax2.cla()
-            ax2.plot(iter_axis, self.model.evals[self.eval.upper()][1],
+            ax2.plot(self.model.evals['TIME(s)'][1],
+                self.model.evals[self.eval.upper()][1],
                 color='b', linewidth=2.0, label=self.eval.upper())
             handles, labels = ax2.get_legend_handles_labels()
             ax2.legend(handles, labels, loc='upper center',
                 bbox_to_anchor=(0.5, 1.05), ncol=2, fancybox=True)
-        ani = anm.FuncAnimation(self.fig, animate, interval=500)
+        return animate
