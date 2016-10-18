@@ -119,7 +119,7 @@ class SCFGP(object):
         cost = (nlml+penelty)/X.shape[0]
         grads = TT.grad(cost, params)
         scaled_grads = total_norm_constraint([grads], 1.)
-        updates = adadelta(scaled_grads, [self.params], learning_rate=0.3, rho=0.95, epsilon=1e-06)
+        updates = adadelta(scaled_grads, [self.params], learning_rate=0.1, rho=0.95, epsilon=1e-06)
         updates = apply_nesterov_momentum(updates, [self.params], momentum=0.9)
         train_inputs = [X, y]
         train_outputs = [cost, alpha, Li]
@@ -199,6 +199,7 @@ class SCFGP(object):
                 params_list.append(self.params.get_value())
                 cost, self.alpha, self.Li = self.train_iter_func(X_b, y_b)
                 cost_sum += cost;batch_count += 1
+            self.params = Ts(np.median(np.array(params_list), axis=0))
             self.evals['COST'][1].append(np.double(cost_sum/batch_count))
             self.evals['TIME(s)'][1].append(time.time()-train_start_time)
             if(Xv is not None and yv is not None):
@@ -217,12 +218,12 @@ class SCFGP(object):
                     cvrg_iter = 0
                 min_obj_val = obj_val
                 self.best_perform_ind = len(self.evals['COST'][1])-1
-                argmin_params = np.median(np.array(params_list), axis=0)
+                argmin_params = self.params.copy()
             else:
                 cvrg_iter += 1
             if(iter > 30 and cvrg_iter > opt_params['max_cvrg_iter']):
                 break
-        self.params = Ts(argmin_params.ravel())
+        self.params = argmin_params.copy()
         cost, self.alpha, self.Li = self.train_func(self.X, self.y)
         self.evals['COST'][1].append(np.double(cost))
         self.evals['TIME(s)'][1].append(time.time()-train_start_time)
