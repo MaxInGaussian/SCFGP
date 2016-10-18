@@ -264,7 +264,7 @@ class SCFGP(object):
             load_dict = pickle.load(load_f)
         for varn, var in load_dict.items():
             self.__dict__[varn] = var
-        self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
+        self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
 
     def _print_current_evals(self):
         self.message(self.NAME, "   TIME = %.4f"%(self.evals['TIME(s)'][1][self.best_perform_ind]))
