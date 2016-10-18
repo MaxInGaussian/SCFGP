@@ -72,11 +72,22 @@ for feature_size in feature_size_choices:
         visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
         if(funcs is None):
             model.set_data(X_train, y_train)
-            model.optimize(Xv=X_valid, yv=y_valid, visualizer=visualizer)
+            model.optimize(
+                obj='cost',
+                Xv=X_valid,
+                yv=y_valid,
+                visualizer=visualizer
+            )
             funcs = model.get_compiled_funcs()
         else:
             model.set_data(X_train, y_train)
-            model.optimize(Xv=X_valid, yv=y_valid, funcs=funcs, visualizer=visualizer)
+            model.optimize(
+                obj='cost',
+                Xv=X_valid,
+                yv=y_valid,
+                funcs=funcs,
+                visualizer=visualizer
+            )
         model.predict(X_valid, y_valid)
         if(not os.path.exists("boston_scfgp.pkl")):
             model.save("boston_scfgp.pkl")

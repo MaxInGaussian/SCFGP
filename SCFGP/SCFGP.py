@@ -33,7 +33,7 @@ class SCFGP(object):
     
     
     def __init__(self, nfeats=18, evals=None, X_scaling_method='min-max',
-        y_scaling_method='normal', verbose=True):
+        y_scaling_method='normal', verbose=False):
         self.M = nfeats
         self.X_scaler = Scaler(X_scaling_method)
         self.y_scaler = Scaler(y_scaling_method)
@@ -119,7 +119,8 @@ class SCFGP(object):
         cost = (nlml+penelty)/X.shape[0]
         grads = TT.grad(cost, params)
         scaled_grads = total_norm_constraint([grads], 1.)
-        updates = adadelta(scaled_grads, [self.params], learning_rate=0.01, rho=0.95, epsilon=1e-06)
+        updates = adadelta(scaled_grads, [self.params],
+            learning_rate=0.05, rho=0.95, epsilon=epsilon)
         updates = apply_nesterov_momentum(updates, [self.params], momentum=0.9)
         train_inputs = [X, y]
         train_outputs = [cost, alpha, Li]
@@ -230,9 +231,12 @@ class SCFGP(object):
         if(Xv is not None and yv is not None):
             self.predict(Xv, yv)
         self.best_perform_ind = len(self.evals['COST'][1])-1
+        disp = self.verbose
+        self.verbose = True
         self.message("-"*14, "OPTIMIZATION RESULT", "-"*14)
         self._print_current_evals()
-        self.message("="*60)
+        self.message("-"*50)
+        self.verbose = disp
 
     def predict(self, Xs, ys=None):
         self.Xs = self.X_scaler.forward_transform(Xs)
