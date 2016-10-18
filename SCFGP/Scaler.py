@@ -45,14 +45,14 @@ class Scaler(object):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
         elif(self.method == "log-normal"):
-            tX = np.log(tX)
+            tX = np.log(1+tX)
             self.data['log-mu'] = np.mean(tX, axis=0)
             self.data['log-std'] = np.std(tX, axis=0)
         elif(self.method == "sigmoid"):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
         elif(self.method == "log-sigmoid"):
-            tX = np.log(tX)
+            tX = np.log(1+tX)
             self.data['log-mu'] = np.mean(tX, axis=0)
             self.data['log-std'] = np.std(tX, axis=0)
     
@@ -63,11 +63,11 @@ class Scaler(object):
         elif(self.method == "normal"):
             return (tX-self.data["mu"])/self.data["std"]
         elif(self.method == "log-normal"):
-            return (np.log(tX)-self.data["log-mu"])/self.data["log-std"]
+            return (np.log(1+tX)-self.data["log-mu"])/self.data["log-std"]
         elif(self.method == "sigmoid"):
             return np.tanh((tX-self.data["mu"])/self.data["std"])
         elif(self.method == "log-sigmoid"):
-            return np.tanh((np.log(tX)-self.data["log-mu"])/self.data["log-std"])
+            return np.tanh((np.log(1+tX)-self.data["log-mu"])/self.data["log-std"])
     
     def backward_transform(self, X):
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
@@ -76,9 +76,9 @@ class Scaler(object):
         elif(self.method == "normal"):
             return X*self.data["std"]+self.data["mu"]
         elif(self.method == "log-normal"):
-            return np.exp(X*self.data["log-std"]+self.data["log-mu"])
+            return np.exp(X*self.data["log-std"]+self.data["log-mu"])-1
         elif(self.method == "sigmoid"):
             return (np.log(1+X)-np.log(1-X))/2.*self.data["std"]+self.data["mu"]
         elif(self.method == "log-sigmoid"):
-            return np.exp((np.log(1+X)-np.log(1-X))/2.*self.data["log-std"]+self.data["log-mu"])
+            return np.exp((np.log(1+X)-np.log(1-X))/2.*self.data["log-std"]+self.data["log-mu"])-1
     
