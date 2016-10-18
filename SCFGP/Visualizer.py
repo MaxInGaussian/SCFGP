@@ -55,18 +55,27 @@ class Visualizer(object):
         ax2 = self.fig.add_subplot(212)
         plt.xlabel('TIME(s)', fontsize=13)
         def animate(i):
+            if(i == 1):
+                data_x1, data_y1, data_x2, data_y2 = [], [], [], []
+            else:
+                data_x1 = ax1.lines[0].get_xdata().tolist()
+                data_y1 = ax1.lines[0].get_ydata().tolist()
+                data_x2 = ax2.lines[0].get_xdata().tolist()
+                data_y2 = ax2.lines[0].get_ydata().tolist()
+            data_x1.append(self.model.evals['TIME(s)'][1][-1])
+            data_y1.append(min(self.model.evals['COST'][1]))               
             ax1.cla()
-            ax1.plot(self.model.evals['TIME(s)'][1][-self.plot_limit:],
-                self.model.evals['COST'][1][-self.plot_limit:],
+            ax1.plot(data_x1[-self.plot_limit:], data_y1[-self.plot_limit:],
                 color='r', linewidth=2.0, label='COST')
             handles, labels = ax1.get_legend_handles_labels()
             ax1.legend(handles, labels, loc='upper center',
-                bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
+                bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)   
+            data_x2.append(self.model.evals['TIME(s)'][1][-1])
+            data_y2.append(min(self.model.evals[self.eval.upper()][1]))            
             ax2.cla()
-            ax2.plot(self.model.evals['TIME(s)'][1][-self.plot_limit:],
-                self.model.evals[self.eval.upper()][1][-self.plot_limit:],
+            ax2.plot(data_x2[-self.plot_limit:], data_y2[-self.plot_limit:],
                 color='b', linewidth=2.0, label=self.eval.upper())
             handles, labels = ax2.get_legend_handles_labels()
             ax2.legend(handles, labels, loc='upper center',
-                bbox_to_anchor=(0.5, 1.05), ncol=2, fancybox=True)
+                bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)
         return animate

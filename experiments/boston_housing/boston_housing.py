@@ -67,14 +67,16 @@ for feature_size in feature_size_choices:
     results = {en:[] for en in evals.keys()}
     for round in range(trials_per_model):
         X_train, y_train, X_valid, y_valid = load_boston_data()
-        model = SCFGP(-1, feature_size, y_scaling_method='log-normal')
+        model = SCFGP(feature_size, y_scaling_method='log-normal')
         plt.close()
-        vis = None #Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
+        visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
         if(funcs is None):
-            model.fit(X_train, y_train, vis=vis)
-            funcs = (model.train_func, model.pred_func)
+            model.set_data(X_train, y_train)
+            model.optimize(Xv=X_valid, yv=y_valid, visualizer=visualizer)
+            funcs = model.get_compiled_funcs()
         else:
-            model.fit(X_train, y_train, funcs=funcs, vis=vis)
+            model.set_data(X_train, y_train)
+            model.optimize(Xv=X_valid, yv=y_valid, funcs=funcs, visualizer=visualizer)
         model.predict(X_valid, y_valid)
         if(not os.path.exists("boston_scfgp.pkl")):
             model.save("boston_scfgp.pkl")
@@ -88,23 +90,6 @@ for feature_size in feature_size_choices:
                 best_model = model
         for metric in evals.keys():
             results[metric].append(model.evals[metric][1][-1])
-        print("\n>>>", model.NAME)
-        print("    Model Selection Score\t\t\t= %.4f%s| Best = %.4f"%(
-            model.evals['SCORE'][1][-1], "  ", best_model.evals['SCORE'][1][-1]))
-        print("    Hyperparameter Selection Cost\t= %.4f%s| Best = %.4f"%(
-            model.evals['COST'][1][-1], "  ", best_model.evals['COST'][1][-1]))
-        print("    Mean Absolute Error\t\t\t\t= %.4f%s| Best = %.4f"%(
-            model.evals['MAE'][1][-1], "  ", best_model.evals['MAE'][1][-1]))
-        print("    Normalized Mean Absolute Error\t= %.4f%s| Best = %.4f"%(
-            model.evals['NMSE'][1][-1], "  ", best_model.evals['NMSE'][1][-1]))
-        print("    Mean Square Error\t\t\t\t= %.4f%s| Best = %.4f"%(
-            model.evals['MSE'][1][-1], "  ", best_model.evals['MSE'][1][-1]))
-        print("    Normalized Mean Square Error\t\t= %.4f%s| Best = %.4f"%(
-            model.evals['NMSE'][1][-1], "  ", best_model.evals['NMSE'][1][-1]))
-        print("    Mean Negative Log Probability\t= %.4f%s| Best = %.4f"%(
-            model.evals['MNLP'][1][-1], "  ", best_model.evals['MNLP'][1][-1]))
-        print("    Training Time\t\t\t\t\t= %.4f%s| Best = %.4f"%(
-            model.evals['TIME(s)'][1][-1], "  ", best_model.evals['TIME(s)'][1][-1]))
     for en in evals.keys():
         evals[en][1].append((np.mean(results[en]), np.std(results[en])))
 

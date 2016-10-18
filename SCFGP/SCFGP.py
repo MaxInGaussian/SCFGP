@@ -7,17 +7,18 @@
 import sys, os, string, time
 import numpy as np
 import numpy.random as npr
-import matplotlib.pyplot as plt 
-import theano
-import theano.tensor as T
-import theano.sandbox.linalg as sT
+import matplotlib.pyplot as plt
+from theano import config as Tc, shared as Ts, function as Tf, tensor as TT
+from theano.sandbox import linalg as Tlin
+import downhill
 
 from .Scaler import Scaler
 from .Optimizer import Optimizer
+from .Updates import *
 
-theano.config.mode = 'FAST_RUN'
-theano.config.optimizer = 'fast_run'
-theano.config.reoptimize_unpickled_function = False
+Tc.mode = 'FAST_RUN'
+Tc.optimizer = 'fast_run'
+Tc.reoptimize_unpickled_function = False
 
 class SCFGP(object):
     
@@ -25,13 +26,13 @@ class SCFGP(object):
     Sparsely Correlated Fourier Features Based Gaussian Process
     """
 
-    ID, NAME, seed, verbose = "", "", None, True
-    freq_kern, iduc_kern, X_scaler, y_scaler = [None]*4
-    R, M, N, D, FKP, IKP = -1, -1, -1, -1, -1, -1
-    X, y, hyper, Li, alpha, Omega, train_func, pred_func = [None]*8
+    ID, NAME, verbose = "", "", True
+    X_scaler, y_scaler = [None]*2
+    M, N, D = -1, -1, -1
+    X, y, hyper, Li, alpha, train_func, pred_func = [None]*7
     
     
-    def __init__(self, nfeats=-1, evals=None, X_scaling_method='min-max',
+    def __init__(self, nfeats=18, evals=None, X_scaling_method='min-max',
         y_scaling_method='normal', verbose=True):
         self.M = nfeats
         self.X_scaler = Scaler(X_scaling_method)
@@ -59,117 +60,88 @@ class SCFGP(object):
             chr(npr.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
         self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
+
+    def init_params(self):
+        a = npr.randn(1)
+        b = npr.randn(1)
+        c = npr.randn(1)
+        F = npr.randn(self.D*self.M)
+        Z = npr.randn(self.D*self.M)
+        P = 2*np.pi*npr.rand(self.M)
+        self.params = Ts(np.concatenate([a, b, c, F, Z, P]))
     
-    def build_theano_model(self):
-        epsilon = 1e-6
-        kl = lambda mu, sig: sig+mu**2-T.log(sig)
-        snorm_cdf = lambda y: .5*(1+T.erf(y/T.sqrt(2+epsilon)+epsilon))
-        X, y, Xs, alpha, Li = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Li')
-        N, S = X.shape[0], Xs.shape[0]
-        hyper = T.dvector('hyper')
+    def unpack_params(self, hyper):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
         c = hyper[2];t_ind+=1
-        sig_n, sig_f = T.exp(a), T.exp(b)
-        sig2_n, sig2_f = sig_n**2, sig_f**2
-        noise = T.log(1+T.exp(c))
-        omega = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
-        Omega = T.reshape(omega, (self.D, self.M))
+        f = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
+        F = TT.reshape(f, (self.D, self.M))
         z = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
-        Z = T.reshape(z, (self.D, self.M))
-        theta = hyper[t_ind:t_ind+self.M];t_ind+=self.M
-        Theta = T.reshape(theta, (1, self.M))
-        FF = T.dot(X, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        Phi = sig_f*T.sqrt(2./self.M)*T.concatenate((T.cos(FF), T.sin(FF)), 1)
-        PhiTPhi = T.dot(Phi.T, Phi)
-        A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
-        L = sT.cholesky(A)
-        t_Li = sT.matrix_inverse(L)
+        Z = TT.reshape(z, (self.D, self.M))
+        p = hyper[t_ind:t_ind+self.M];t_ind+=self.M
+        P = TT.reshape(p, (1, self.M))
+        return a, b, c, F, Z, P
+    
+    def build_theano_models(self):
+        epsilon = 1e-6
+        kl = lambda mu, sig: sig+mu**2-TT.log(sig)
+        X, y = TT.dmatrices('X', 'y')
+        params = TT.dvector('params')
+        a, b, c, F, Z, P = self.unpack_params(params)
+        sig2_n, sig_f = TT.exp(2*a), TT.exp(b)
+        FF = TT.dot(X, F)+(P-TT.sum(Z*F, 0)[None, :])
+        Phi = TT.concatenate((TT.cos(FF), TT.sin(FF)), 1)
+        Phi = sig_f*TT.sqrt(2./self.M)*Phi
+        noise = TT.log(1+TT.exp(c))
+        PhiTPhi = TT.dot(Phi.T, Phi)
+        A = PhiTPhi+(sig2_n+epsilon)*TT.identity_like(PhiTPhi)
+        L = Tlin.cholesky(A)
+        Li = Tlin.matrix_inverse(L)
         PhiTy = Phi.T.dot(y)
-        beta = T.dot(t_Li, PhiTy)
-        t_alpha = T.dot(t_Li.T, beta)
-        mu_f = T.dot(Phi, t_alpha)
-        var_f = (T.dot(Phi, t_Li.T)**2).sum(1)[:, None]
-        disper = noise*(var_f+1)
-        mu_w = T.sum(T.mean(Omega, axis=1))
-        sig_w = T.sum(T.std(Omega, axis=1))
+        beta = TT.dot(Li, PhiTy)
+        alpha = TT.dot(Li.T, beta)
+        mu_f = TT.dot(Phi, alpha)
+        var_f = (TT.dot(Phi, Li.T)**2).sum(1)[:, None]
+        dsp = noise*(var_f+1)
+        mu_w = TT.sum(TT.mean(F, axis=1))
+        sig_w = TT.sum(TT.std(F, axis=1))
         hermgauss = np.polynomial.hermite.hermgauss(30)
-        x = theano.shared(hermgauss[0])[None, None, :]
-        w = theano.shared(hermgauss[1]/np.sqrt(np.pi))[None, None, :]
-        herm_f = T.sqrt(2*var_f[:, :, None])*x+mu_f[:, :, None]
-        nlk = (0.5*herm_f**2.-y[:, :, None]*herm_f)/disper[:, :, None]+0.5*(
-            T.log(2*np.pi*disper[:, :, None])+y[:, :, None]**2/disper[:, :, None])
-        enll = w*nlk
-        cost = 2*T.log(T.diagonal(L)).sum()+2*enll.sum()+1./sig2_n*(
-                (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
+        herm_x = Ts(hermgauss[0])[None, None, :]
+        herm_w = Ts(hermgauss[1]/np.sqrt(np.pi))[None, None, :]
+        herm_f = TT.sqrt(2*var_f[:, :, None])*herm_x+mu_f[:, :, None]
+        nlk = (0.5*herm_f**2.-y[:, :, None]*herm_f)/dsp[:, :, None]+0.5*(
+            TT.log(2*np.pi*dsp[:, :, None])+y[:, :, None]**2/dsp[:, :, None])
+        enll = herm_w*nlk
+        nlml = 2*TT.log(TT.diagonal(L)).sum()+2*enll.sum()+1./sig2_n*(
+            (y**2).sum()-(beta**2).sum())+2*(X.shape[0]-self.M)*a
         penelty = kl(mu_w, sig_w)
-        cost = (cost+penelty)/N
-        dhyper = T.grad(cost, hyper)
-        train_input = [X, y, hyper]
-        train_input_name = ['X', 'y', 'hyper']
-        train_output = [t_alpha, t_Li, mu_f, cost, dhyper]
-        train_output_name = ['alpha', 'Li', 'mu_f', 'cost', 'dhyper']
-        self.train_func = theano.function(train_input, train_output)
-        FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
-        Phis = sig_f*T.sqrt(2./self.M)*T.concatenate((T.cos(FFs), T.sin(FFs)), 1)
-        mu_pred = T.dot(Phis, alpha)
-        std_pred = (noise*(1+(T.dot(Phis, Li.T)**2).sum(1)))**0.5
-        pred_input = [Xs, hyper, alpha, Li]
-        pred_input_name = ['Xs', 'hyper', 'alpha', 'Li']
-        pred_output = [mu_pred, std_pred]
-        pred_output_name = ['mu_pred', 'std_pred']
-        self.pred_func = theano.function(pred_input, pred_output)
+        cost = (nlml+penelty)/X.shape[0]
+        grads = TT.grad(cost, params)
+        scaled_grads = total_norm_constraint([grads], 1.)
+        updates = adadelta(scaled_grads, [self.params], learning_rate=0.3, rho=0.95, epsilon=1e-06)
+        updates = apply_nesterov_momentum(updates, [self.params], momentum=0.9)
+        train_inputs = [X, y]
+        train_outputs = [cost, alpha, Li]
+        self.train_func = Tf(train_inputs, train_outputs,
+            givens=[(params, self.params)])
+        self.train_iter_func = Tf(train_inputs, train_outputs,
+            givens=[(params, self.params)], updates=updates)
+        Xs, Li, alpha = TT.dmatrices('Xs', 'Li', 'alpha')
+        FFs = TT.dot(Xs, F)+(P-TT.sum(Z*F, 0)[None, :])
+        Phis = TT.concatenate((TT.cos(FFs), TT.sin(FFs)), 1)
+        Phis = sig_f*TT.sqrt(2./self.M)*Phis
+        mu_pred = TT.dot(Phis, alpha)
+        std_pred = (noise*(1+(TT.dot(Phis, Li.T)**2).sum(1)))**0.5
+        pred_inputs = [Xs, alpha, Li]
+        pred_outputs = [mu_pred, std_pred]
+        self.pred_func = Tf(pred_inputs, pred_outputs,
+            givens=[(params, self.params)])
+    
+    def get_compiled_funcs(self):
+        return self.train_func, self.train_iter_func, self.pred_func
 
-    def init_hyper(self):
-        a_b_c = npr.randn(3)
-        omega = npr.randn(self.D*self.M)
-        z = npr.randn(self.D*self.M)
-        theta = 2*np.pi*npr.rand(self.M)
-        self.hyper = np.concatenate((a_b_c, omega, z, theta))
-
-    def optimize(self, Xv=None, yv=None, funcs=None, opt=None, vis=None):
-        self.opt = opt
-        for metric in self.evals.keys():
-            self.evals[metric][1] = []
-        if(funcs is None):
-            self.message("-"*50, "\nCompiling SCFGP theano model...")
-            self.build_theano_model()
-            self.message("done.")
-        else:
-            self.train_func, self.pred_func = funcs
-        train_start_time = time.time()
-        if(self.opt is None):
-            self.opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 18, 1e-5, True)
-        if(vis is not None):
-            vis.model = self
-            animate = vis.train_with_plot()
-        def train(iter, hyper):
-            self.hyper = hyper.copy()
-            self.alpha, self.Li, mu_f, COST, dhyper =\
-                self.train_func(self.X, self.y, hyper)
-            self.mu_f = self.y_scaler.backward_transform(mu_f)
-            self.evals['COST'][1].append(np.double(COST))
-            self.evals['TIME(s)'][1].append(time.time()-train_start_time)
-            if(Xv is not None and yv is not None):
-                self.predict(Xv, yv)
-            if(iter == -1):
-                return
-            if(iter%(self.opt.max_iter//10) == 1):
-                self.message("-"*12, "VALIDATION ITERATION", iter, "-"*12)
-                self._print_current_evals()
-            if(vis is not None):
-                animate(iter)
-                plt.pause(0.1)
-            if(Xv is not None and yv is not None):
-                return COST, self.evals['NMSE'][1][-1], dhyper
-            return COST, COST, dhyper
-        self.opt.run(train, self.hyper)
-        self.message("-"*14, "OPTIMIZATION RESULT", "-"*14)
-        self._print_current_evals()
-        self.message("="*60)
-
-    def set_data(self, X, y, Xv=None, yv=None):
+    def set_data(self, X, y):
         self.message("-"*50, "\nNormalizing SCFGP training data...")
         self.X_scaler.fit(X)
         self.y_scaler.fit(y)
@@ -177,19 +149,93 @@ class SCFGP(object):
         self.y = self.y_scaler.forward_transform(y)
         self.message("done.")
         self.N, self.D = self.X.shape
-        if(self.M == -1):
-            self.M = int(min(self.N/10., self.N**0.6))
-        if(self.hyper is None):
+        if('train_func' not in self.__dict__.keys()):
             self.message("-"*50, "\nInitializing SCFGP hyperparameters...")
-            self.init_hyper()
+            self.init_params()
             self.message("done.")
         else:
-            self.alpha, self.Li, mu_f, COST, dhyper =\
+            cost, self.alpha, self.Li =\
                 self.train_func(self.X, self.y, self.hyper)
+    
+    def minibatches(self, X, y, batchsize, shuffle=True):
+        assert len(X) == len(y)
+        if(shuffle):
+            inds = np.arange(len(X))
+            np.random.shuffle(inds)
+        for start_ind in range(0, len(X)-batchsize+1, batchsize):
+            if shuffle:
+                batch = inds[start_ind:start_ind+batchsize]
+            else:
+                batch = slice(start_ind, start_ind+batchsize)
+            yield X[batch], y[batch]
+
+    def optimize(self, obj='cost', Xv=None, yv=None, funcs=None, visualizer=None, 
+        opt_params={'cvrg_tol': 1e-4, 'max_cvrg_iter': 28, 'max_iter': 500}):
+        for metric in self.evals.keys():
+            self.evals[metric][1] = []
+        if(funcs is None):
+            self.message("-"*50, "\nCompiling SCFGP theano model...")
+            self.build_theano_models()
+            self.message("done.")
+        else:
+            self.train_func, self.train_iter_func, self.pred_func = funcs
+        train_start_time = time.time()
+        if(visualizer is not None):
+            visualizer.model = self
+            animate = visualizer.train_with_plot()
+        if(Xv is None or yv is None):
+            obj='cost'
+            self.evals['MAE'][1].append(0)
+            self.evals['NMAE'][1].append(0)
+            self.evals['MSE'][1].append(0)
+            self.evals['NMSE'][1].append(0)
+            self.evals['MNLP'][1].append(0)
+            self.evals['SCORE'][1].append(0)
+        self.best_perform_ind = 0
+        min_obj_val, argmin_params, cvrg_iter = np.Infinity, None, 0
+        for iter in range(opt_params['max_iter']):
+            cost_sum, params_list, batch_count = 0, [], 0
+            for X_b, y_b in self.minibatches(self.X, self.y, int(self.N**0.5)):
+                params_list.append(self.params.get_value())
+                cost, self.alpha, self.Li = self.train_iter_func(X_b, y_b)
+                cost_sum += cost;batch_count += 1
+            self.evals['COST'][1].append(np.double(cost_sum/batch_count))
+            self.evals['TIME(s)'][1].append(time.time()-train_start_time)
+            if(Xv is not None and yv is not None):
+                self.predict(Xv, yv)
+            if(iter%(opt_params['max_iter']//10) == 1):
+                self.message("-"*12, "VALIDATION ITERATION", iter, "-"*12)
+                self._print_current_evals()
+            if(visualizer is not None and iter%2 == 1):
+                animate(iter)
+                plt.pause(0.1)
+            obj_val = self.evals[obj.upper()][1][-1]
+            if(obj_val < min_obj_val):
+                if(min_obj_val-obj_val < opt_params['cvrg_tol']):
+                    cvrg_iter += 1
+                else:
+                    cvrg_iter = 0
+                min_obj_val = obj_val
+                self.best_perform_ind = len(self.evals['COST'][1])-1
+                argmin_params = np.median(np.array(params_list), axis=0)
+            else:
+                cvrg_iter += 1
+            if(iter > 30 and cvrg_iter > opt_params['max_cvrg_iter']):
+                break
+        self.params = Ts(argmin_params.ravel())
+        cost, self.alpha, self.Li = self.train_func(self.X, self.y)
+        self.evals['COST'][1].append(np.double(cost))
+        self.evals['TIME(s)'][1].append(time.time()-train_start_time)
+        if(Xv is not None and yv is not None):
+            self.predict(Xv, yv)
+        self.best_perform_ind = len(self.evals['COST'][1])-1
+        self.message("-"*14, "OPTIMIZATION RESULT", "-"*14)
+        self._print_current_evals()
+        self.message("="*60)
 
     def predict(self, Xs, ys=None):
-        mu_f, std_f = self.pred_func(
-            self.X_scaler.forward_transform(Xs), self.hyper, self.alpha, self.Li)
+        self.Xs = self.X_scaler.forward_transform(Xs)
+        mu_f, std_f = self.pred_func(self.Xs, self.alpha, self.Li)
         mu_y = self.y_scaler.backward_transform(mu_f)
         up_bnd_y = self.y_scaler.backward_transform(mu_f+std_f[:, None])
         std_y = up_bnd_y-mu_y
@@ -206,8 +252,8 @@ class SCFGP(object):
 
     def save(self, path):
         import pickle
-        save_vars = ['ID', 'M', 'X_scaler', 'y_scaler',
-            'pred_func', 'hyper', 'alpha', 'Li', 'evals']
+        save_vars = ['ID', 'M', 'X_scaler', 'y_scaler', 'train_func',
+            'pred_func', 'params', 'alpha', 'Li', 'evals']
         save_dict = {varn: self.__dict__[varn] for varn in save_vars}
         with open(path, "wb") as save_f:
             pickle.dump(save_dict, save_f, pickle.HIGHEST_PROTOCOL)
@@ -221,14 +267,14 @@ class SCFGP(object):
         self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
 
     def _print_current_evals(self):
-        self.message(self.NAME, "   TIME = %.4f"%(self.evals['TIME(s)'][1][-1]))
-        self.message(self.NAME, "  SCORE = %.4f"%(self.evals['SCORE'][1][-1]))
-        self.message(self.NAME, "   COST = %.4f"%(self.evals['COST'][1][-1]))
-        self.message(self.NAME, "    MAE = %.4f"%(self.evals['MAE'][1][-1]))
-        self.message(self.NAME, "   NMAE = %.4f"%(self.evals['NMAE'][1][-1]))
-        self.message(self.NAME, "    MSE = %.4f"%(self.evals['MSE'][1][-1]))
-        self.message(self.NAME, "   NMSE = %.4f"%(self.evals['NMSE'][1][-1]))
-        self.message(self.NAME, "   MNLP = %.4f"%(self.evals['MNLP'][1][-1]))
+        self.message(self.NAME, "   TIME = %.4f"%(self.evals['TIME(s)'][1][self.best_perform_ind]))
+        self.message(self.NAME, "  SCORE = %.4f"%(self.evals['SCORE'][1][self.best_perform_ind]))
+        self.message(self.NAME, "   COST = %.4f"%(self.evals['COST'][1][self.best_perform_ind]))
+        self.message(self.NAME, "    MAE = %.4f"%(self.evals['MAE'][1][self.best_perform_ind]))
+        self.message(self.NAME, "   NMAE = %.4f"%(self.evals['NMAE'][1][self.best_perform_ind]))
+        self.message(self.NAME, "    MSE = %.4f"%(self.evals['MSE'][1][self.best_perform_ind]))
+        self.message(self.NAME, "   NMSE = %.4f"%(self.evals['NMSE'][1][self.best_perform_ind]))
+        self.message(self.NAME, "   MNLP = %.4f"%(self.evals['MNLP'][1][self.best_perform_ind]))
 
 
 
