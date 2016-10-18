@@ -119,7 +119,7 @@ class SCFGP(object):
         cost = (nlml+penelty)/X.shape[0]
         grads = TT.grad(cost, params)
         scaled_grads = total_norm_constraint([grads], 1.)
-        updates = adadelta(scaled_grads, [self.params], learning_rate=0.1, rho=0.95, epsilon=1e-06)
+        updates = adadelta(scaled_grads, [self.params], learning_rate=0.01, rho=0.95, epsilon=1e-06)
         updates = apply_nesterov_momentum(updates, [self.params], momentum=0.9)
         train_inputs = [X, y]
         train_outputs = [cost, alpha, Li]
