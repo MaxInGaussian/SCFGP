@@ -170,8 +170,15 @@ class SCFGP(object):
                 batch = slice(start_ind, start_ind+batchsize)
             yield X[batch], y[batch]
 
-    def optimize(self, obj='cost', Xv=None, yv=None, funcs=None, visualizer=None, 
-        opt_params={'cvrg_tol': 1e-4, 'max_cvrg_iter': 28, 'max_iter': 500}):
+    def optimize(self, obj='cost', Xv=None, yv=None, funcs=None,
+        visualizer=None, opt_params=None):
+        if(opt_params is None):
+            opt_params = {
+                'batches_num': 18,
+                'cvrg_tol': 1e-4,
+                'max_cvrg_iter': 28,
+                'max_iter': 500
+            }
         for metric in self.evals.keys():
             self.evals[metric][1] = []
         if(funcs is None):
@@ -200,6 +207,8 @@ class SCFGP(object):
                 params_list.append(self.params.get_value())
                 cost, self.alpha, self.Li = self.train_iter_func(X_b, y_b)
                 cost_sum += cost;batch_count += 1
+                if(batch_count == opt_params['batches_num']):
+                    break
             self.params = Ts(np.median(np.array(params_list), axis=0))
             self.evals['COST'][1].append(np.double(cost_sum/batch_count))
             self.evals['TIME(s)'][1].append(time.time()-train_start_time)
