@@ -28,13 +28,12 @@ class SCFGP(object):
     ID, NAME, seed, verbose = "", "", None, True
     freq_kern, iduc_kern, X_scaler, y_scaler = [None]*4
     R, M, N, D, FKP, IKP = -1, -1, -1, -1, -1, -1
-    X, y, hyper, Ri, alpha, Omega, train_func, pred_func = [None]*8
+    X, y, hyper, Li, alpha, Omega, train_func, pred_func = [None]*8
     
     
-    def __init__(self, rank=-1, nfeats=-1, evals=None,
-        X_scaling_method='min-max', y_scaling_method='normal', verbose=True):
+    def __init__(self, nfeats=-1, evals=None, X_scaling_method='min-max',
+        y_scaling_method='normal', verbose=True):
         self.M = nfeats
-        self.R = rank
         self.X_scaler = Scaler(X_scaling_method)
         self.y_scaler = Scaler(y_scaling_method)
         self.evals = {
@@ -58,13 +57,13 @@ class SCFGP(object):
         self.ID = ''.join(
             chr(npr.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
-        self.NAME = "SCFGP (Rank=%s, Feature Size=%d)"%(str(self.R), self.M)
+        self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
     
     def build_theano_model(self):
         epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-T.log(sig)
         snorm_cdf = lambda y: .5*(1+T.erf(y/T.sqrt(2+epsilon)+epsilon))
-        X, y, Xs, alpha, Ri = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Ri')
+        X, y, Xs, alpha, Li = T.dmatrices('X', 'Y', 'Xs', 'alpha', 'Li')
         N, S = X.shape[0], Xs.shape[0]
         hyper = T.dvector('hyper')
         t_ind = 0
@@ -84,13 +83,13 @@ class SCFGP(object):
         Phi = sig_f*T.sqrt(2./self.M)*T.concatenate((T.cos(FF), T.sin(FF)), 1)
         PhiTPhi = T.dot(Phi.T, Phi)
         A = PhiTPhi+(sig2_n+epsilon)*T.identity_like(PhiTPhi)
-        R = sT.cholesky(A)
-        t_Ri = sT.matrix_inverse(R)
+        L = sT.cholesky(A)
+        t_Li = sT.matrix_inverse(L)
         PhiTy = Phi.T.dot(y)
-        beta = T.dot(t_Ri, PhiTy)
-        t_alpha = T.dot(t_Ri.T, beta)
+        beta = T.dot(t_Li, PhiTy)
+        t_alpha = T.dot(t_Li.T, beta)
         mu_f = T.dot(Phi, t_alpha)
-        var_f = (T.dot(Phi, t_Ri.T)**2).sum(1)[:, None]
+        var_f = (T.dot(Phi, t_Li.T)**2).sum(1)[:, None]
         disper = noise*(var_f+1)
         mu_w = T.sum(T.mean(Omega, axis=1))
         sig_w = T.sum(T.std(Omega, axis=1))
@@ -101,22 +100,22 @@ class SCFGP(object):
         nlk = (0.5*herm_f**2.-y[:, :, None]*herm_f)/disper[:, :, None]+0.5*(
             T.log(2*np.pi*disper[:, :, None])+y[:, :, None]**2/disper[:, :, None])
         enll = w*nlk
-        cost = 2*T.log(T.diagonal(R)).sum()+2*enll.sum()+1./sig2_n*(
+        cost = 2*T.log(T.diagonal(L)).sum()+2*enll.sum()+1./sig2_n*(
                 (y**2).sum()-(beta**2).sum())+2*(N-self.M)*a
         penelty = kl(mu_w, sig_w)
         cost = (cost+penelty)/N
         dhyper = T.grad(cost, hyper)
         train_input = [X, y, hyper]
         train_input_name = ['X', 'y', 'hyper']
-        train_output = [t_alpha, t_Ri, mu_f, cost, dhyper]
-        train_output_name = ['alpha', 'Ri', 'mu_f', 'cost', 'dhyper']
+        train_output = [t_alpha, t_Li, mu_f, cost, dhyper]
+        train_output_name = ['alpha', 'Li', 'mu_f', 'cost', 'dhyper']
         self.train_func = theano.function(train_input, train_output)
         FFs = T.dot(Xs, Omega)+(Theta-T.sum(Z*Omega, 0)[None, :])
         Phis = sig_f*T.sqrt(2./self.M)*T.concatenate((T.cos(FFs), T.sin(FFs)), 1)
         mu_pred = T.dot(Phis, alpha)
-        std_pred = (noise*(1+(T.dot(Phis, Ri.T)**2).sum(1)))**0.5
-        pred_input = [Xs, hyper, alpha, Ri]
-        pred_input_name = ['Xs', 'hyper', 'alpha', 'Ri']
+        std_pred = (noise*(1+(T.dot(Phis, Li.T)**2).sum(1)))**0.5
+        pred_input = [Xs, hyper, alpha, Li]
+        pred_input_name = ['Xs', 'hyper', 'alpha', 'Li']
         pred_output = [mu_pred, std_pred]
         pred_output_name = ['mu_pred', 'std_pred']
         self.pred_func = theano.function(pred_input, pred_output)
@@ -127,7 +126,7 @@ class SCFGP(object):
         z = npr.randn(self.D*self.M)
         theta = 2*np.pi*npr.rand(self.M)
         self.hyper = np.concatenate((a_b_c, omega, z, theta))
-        self.alpha, self.Ri, self.mu_f, self.cost, _ =\
+        self.alpha, self.Li, self.mu_f, self.cost, _ =\
             self.train_func(self.X, self.y, self.hyper)
 
     def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, vis=None):
@@ -168,7 +167,7 @@ class SCFGP(object):
             animate = vis.train_with_plot()
         def train(iter, hyper):
             self.hyper = hyper.copy()
-            self.alpha, self.Ri, mu_f, COST, dhyper =\
+            self.alpha, self.Li, mu_f, COST, dhyper =\
                 self.train_func(self.X, self.y, hyper)
             self.mu_f = self.y_scaler.backward_transform(mu_f)
             self.evals['COST'][1].append(np.double(COST))
@@ -180,7 +179,7 @@ class SCFGP(object):
             if(iter%(self.opt.max_iter//10) == 1):
                 self.message("-"*12, "VALIDATION ITERATION", iter, "-"*12)
                 self._print_current_evals()
-            if(vis is not None and iter%(self.opt.max_iter//2) == 1):
+            if(vis is not None):
                 animate(iter)
                 plt.pause(0.1)
             if(Xv is not None and yv is not None):
@@ -193,7 +192,7 @@ class SCFGP(object):
 
     def predict(self, Xs, ys=None):
         mu_f, std_f = self.pred_func(
-            self.X_scaler.forward_transform(Xs), self.hyper, self.alpha, self.Ri)
+            self.X_scaler.forward_transform(Xs), self.hyper, self.alpha, self.Li)
         mu_y = self.y_scaler.backward_transform(mu_f)
         up_bnd_y = self.y_scaler.backward_transform(mu_f+std_f[:, None])
         std_y = up_bnd_y-mu_y
@@ -210,8 +209,8 @@ class SCFGP(object):
 
     def save(self, path):
         import pickle
-        save_vars = ['ID', 'R', 'M', 'X_scaler', 'y_scaler',
-            'pred_func', 'hyper', 'alpha', 'Ri', 'evals']
+        save_vars = ['ID', 'M', 'X_scaler', 'y_scaler',
+            'pred_func', 'hyper', 'alpha', 'Li', 'evals']
         save_dict = {varn: self.__dict__[varn] for varn in save_vars}
         with open(path, "wb") as save_f:
             pickle.dump(save_dict, save_f, pickle.HIGHEST_PROTOCOL)

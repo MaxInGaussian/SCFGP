@@ -71,10 +71,11 @@ for feature_size in feature_size_choices:
         plt.close()
         vis = None #Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
         if(funcs is None):
-            model.fit(X_train, y_train, X_valid, y_valid, vis=vis)
+            model.fit(X_train, y_train, vis=vis)
             funcs = (model.train_func, model.pred_func)
         else:
-            model.fit(X_train, y_train, X_valid, y_valid, funcs, vis=vis)
+            model.fit(X_train, y_train, funcs=funcs, vis=vis)
+        model.predict(X_valid, y_valid)
         if(not os.path.exists("boston_scfgp.pkl")):
             model.save("boston_scfgp.pkl")
             best_model = model
