@@ -47,6 +47,7 @@ class SCFGP(object):
             "TIME(s)": ["Training Time", []],
         } if evals is None else evals
         self.verbose = verbose
+        self.generate_ID()
     
     def message(self, *arg):
         if(self.verbose):
@@ -120,46 +121,24 @@ class SCFGP(object):
         pred_output_name = ['mu_pred', 'std_pred']
         self.pred_func = theano.function(pred_input, pred_output)
 
-    def init_model(self):
+    def init_hyper(self):
         a_b_c = npr.randn(3)
         omega = npr.randn(self.D*self.M)
         z = npr.randn(self.D*self.M)
         theta = 2*np.pi*npr.rand(self.M)
         self.hyper = np.concatenate((a_b_c, omega, z, theta))
-        self.alpha, self.Li, self.mu_f, self.cost, _ =\
-            self.train_func(self.X, self.y, self.hyper)
 
-    def fit(self, X, y, Xv=None, yv=None, funcs=None, opt=None, vis=None):
+    def optimize(self, Xv=None, yv=None, funcs=None, opt=None, vis=None):
+        self.opt = opt
         for metric in self.evals.keys():
             self.evals[metric][1] = []
-        self.opt = opt
-        self.message("-"*50, "\nNormalizing SCFGP training data...")
-        self.X_scaler.fit(X)
-        self.y_scaler.fit(y)
-        self.X = self.X_scaler.forward_transform(X)
-        self.y = self.y_scaler.forward_transform(y)
-        self.message("done.")
-        self.N, self.D = self.X.shape
-        if(self.M == -1):
-            self.M = int(min(self.N/10., self.N**0.6))
-        if(self.R == -1):
-            self.R = int(min(self.D/2., self.M**0.6))
-        self.generate_ID()
         if(funcs is None):
             self.message("-"*50, "\nCompiling SCFGP theano model...")
             self.build_theano_model()
             self.message("done.")
         else:
             self.train_func, self.pred_func = funcs
-        if(Xv is not None and yv is not None):
-            self.Xv = self.X_scaler.forward_transform(Xv)
-            self.yv = self.y_scaler.forward_transform(yv)
-        else:
-            plot = False
         train_start_time = time.time()
-        self.message("-"*50, "\nInitializing SCFGP hyperparameters...")
-        self.init_model()
-        self.message("done.")
         if(self.opt is None):
             self.opt = Optimizer("adam", [0.01, 0.8, 0.88], 500, 18, 1e-5, True)
         if(vis is not None):
@@ -186,9 +165,27 @@ class SCFGP(object):
                 return COST, self.evals['NMSE'][1][-1], dhyper
             return COST, COST, dhyper
         self.opt.run(train, self.hyper)
-        self.message("-"*16, "TRAINING RESULT", "-"*16)
+        self.message("-"*14, "OPTIMIZATION RESULT", "-"*14)
         self._print_current_evals()
         self.message("="*60)
+
+    def set_data(self, X, y, Xv=None, yv=None):
+        self.message("-"*50, "\nNormalizing SCFGP training data...")
+        self.X_scaler.fit(X)
+        self.y_scaler.fit(y)
+        self.X = self.X_scaler.forward_transform(X)
+        self.y = self.y_scaler.forward_transform(y)
+        self.message("done.")
+        self.N, self.D = self.X.shape
+        if(self.M == -1):
+            self.M = int(min(self.N/10., self.N**0.6))
+        if(self.hyper is None):
+            self.message("-"*50, "\nInitializing SCFGP hyperparameters...")
+            self.init_hyper()
+            self.message("done.")
+        else:
+            self.alpha, self.Li, mu_f, COST, dhyper =\
+                self.train_func(self.X, self.y, self.hyper)
 
     def predict(self, Xs, ys=None):
         mu_f, std_f = self.pred_func(
