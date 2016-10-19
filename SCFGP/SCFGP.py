@@ -182,6 +182,7 @@ class SCFGP(object):
         obj = 'COST' if obj not in self.evals.keys() else obj
         algo = {'algo': None} if 'algo' not in args.keys() else args['algo']
         nbatches = 18 if 'nbatches' not in args.keys() else args['nbatches']
+        batchsize = 150 if 'batchsize' not in args.keys() else args['batchsize']
         cvrg_tol = 1e-4 if 'cvrg_tol' not in args.keys() else args['cvrg_tol']
         max_cvrg = 18 if 'max_cvrg' not in args.keys() else args['max_cvrg']
         max_iter = 500 if 'max_iter' not in args.keys() else args['max_iter']
@@ -220,7 +221,7 @@ class SCFGP(object):
         for iter in range(max_iter):
             if(nbatches > 1):
                 cost_sum, params_list, batch_count = 0, [], 0
-                for X, y in self.minibatches(self.X, self.y, int(self.N**0.5)):
+                for X, y in self.minibatches(self.X, self.y, batchsize):
                     params_list.append(self.params.get_value())
                     cost, self.alpha, self.Li = self.train_iter_func(X, y)
                     cost_sum += cost;batch_count += 1
