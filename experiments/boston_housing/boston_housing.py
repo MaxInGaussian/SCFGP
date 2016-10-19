@@ -109,8 +109,8 @@ for nfeats in nfeats_choices:
                 model.save(BEST_MODEL_PATH)
                 print("!"*20, "NEW BEST PREDICTOR", "!"*20)
                 print("!"*60)
-        for metric in evals.keys():
-            results[metric].append(model.evals[metric][1][-1])
+        for res in evals.keys():
+            results[res].append(model.evals[res][1][-1])
     for en in evals.keys():
         evals[en][1].append((np.mean(results[en]), np.std(results[en])))
 
