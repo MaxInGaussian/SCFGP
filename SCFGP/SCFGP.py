@@ -226,6 +226,8 @@ class SCFGP(object):
                 animate(iter)
                 plt.pause(0.1)
             obj_val = self.evals[obj.upper()][1][-1]
+            if(obj.upper() == 'SCORE'):
+                obj_val = -obj_val
             if(obj_val < min_obj_val):
                 if(min_obj_val-obj_val < cvrg_tol):
                     cvrg_iter += 1
