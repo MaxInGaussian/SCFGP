@@ -270,8 +270,8 @@ class SCFGP(object):
             self.evals['NMSE'][1].append(self.evals['MSE'][1][-1]/np.var(ys))
             self.evals['MNLP'][1].append(0.5*np.mean(((
                 ys-mu_y)/std_y)**2+np.log(2*np.pi*std_y**2)))
-            self.evals['SCORE'][1].append(np.exp(
-                self.evals['MNLP'][1][-1])/self.evals['NMSE'][1][-1])
+            self.evals['SCORE'][1].append(
+                self.evals['MNLP'][1][-1]/self.evals['NMSE'][1][-1])
         return mu_y, std_y
 
     def save(self, path):
