@@ -10,7 +10,6 @@ import numpy.random as npr
 import matplotlib.pyplot as plt
 from theano import config as Tc, shared as Ts, function as Tf, tensor as TT
 from theano.sandbox import linalg as Tlin
-import downhill
 
 from .ParamUpdate import UpdateRules as OPT
 from .Scaler import Scaler
