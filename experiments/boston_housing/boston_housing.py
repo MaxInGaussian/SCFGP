@@ -15,7 +15,8 @@ BEST_MODEL_PATH = 'boston_scfgp.pkl'
 ############################ Prior Setting ############################
 reps_per_feats = 50
 metric = 'score'
-visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
+visualizer = None
+# visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
 nfeats_range = [30, 100]
 algo = {
     'algo': 'adamax',
@@ -29,7 +30,7 @@ algo = {
 opt_params = {
     'obj': metric,
     'algo': algo,
-    'batches_num': 18,
+    'batches_num': 1,
     'cvrg_tol': 1e-5,
     'max_cvrg_iter': 18,
     'max_iter': 500
