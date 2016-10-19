@@ -13,7 +13,7 @@ class Visualizer(object):
     
     model, fig = None, None
     
-    def __init__(self, fig, eval='NMSE', plot_limit=150):
+    def __init__(self, fig, eval='NMSE', plot_limit=100):
         self.fig = fig
         self.eval = eval
         self.plot_limit = plot_limit

@@ -118,8 +118,8 @@ class SCFGP(object):
         penelty = kl(mu_w, sig_w)
         cost = (nlml+penelty)/X.shape[0]
         grads = TT.grad(cost, params)
-        updates = getattr(OPT, algo)([grads], [self.params], **algo_params)
-        updates = apply_nesterov_momentum(updates, [self.params], momentum=0.9)
+        updates = getattr(OPT, algo)(self.params, grads, **algo_params)
+        updates = getattr(OPT, 'apply_nesterov_momentum')(updates, momentum=0.9)
         train_inputs = [X, y]
         train_outputs = [cost, alpha, Li]
         self.train_func = Tf(train_inputs, train_outputs,
