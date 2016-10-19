@@ -14,9 +14,12 @@ BEST_MODEL_PATH = 'boston_scfgp.pkl'
 
 ############################ Prior Setting ############################
 reps_per_feats = 20
-metric = 'nmse'
+plot_metric = 'nmse'
+select_params_metric = 'nmse'
+select_model_metric = 'nmse'
 # visualizer = None
-visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
+fig = plt.figure(figsize=(8, 6), facecolor='white')
+visualizer = Visualizer(fig, plot_metric)
 nfeats_range = [10, 90]
 algo = {
     'algo': 'adam',
@@ -28,35 +31,15 @@ algo = {
     }
 }
 opt_params = {
-    'obj': metric,
+    'obj': select_params_metric,
     'algo': algo,
-    'batches_num': 5,
+    'nbatches': 5,
     'cvrg_tol': 1e-5,
-    'max_cvrg_iter': 28,
+    'max_cvrg': 28,
     'max_iter': 500
 }
 
 ############################ General Methods ############################
-def test_xgb_regressor():
-    import xgboost as xgb
-    from sklearn.grid_search import GridSearchCV
-    xgb_params = {
-        'max_depth': [3, 4, 5, 6, 7],
-        'n_estimators': [200, 400, 600]
-    }
-    clf = GridSearchCV(xgb.XGBRegressor(), xgb_params, verbose=1)
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_valid)
-    xgb_mae = np.mean(np.abs(y_pred-y_valid))
-    xgb_nmae = xgb_mae/np.std(y_valid)
-    xgb_mse = np.mean((y_pred-y_valid)**2.)
-    xgb_nmse = xgb_mse/np.var(y_valid)
-    print("\n>>> XGBRegressor", clf.best_params_)
-    print("    Mean Absolute Error\t\t\t\t= %.4f"%(xgb_mae))
-    print("    Normalized Mean Absolute Error\t= %.4f"%(xgb_nmae))
-    print("    Mean Square Error\t\t\t\t= %.4f"%(xgb_mse))
-    print("    Normalized Mean Square Error\t\t= %.4f"%(xgb_nmse))
-
 def load_boston_data(prop=400/506):
     from sklearn import datasets
     boston = datasets.load_boston()
@@ -105,8 +88,8 @@ for nfeats in nfeats_choices:
             best_model = SCFGP()
             best_model.load(BEST_MODEL_PATH)
             best_model.predict(X_valid, y_valid)
-            if(model.evals[metric.upper()][1][-1] <
-                best_model.evals[metric.upper()][1][-1]):
+            if(model.evals[select_model_metric.upper()][1][-1] <
+                best_model.evals[select_model_metric.upper()][1][-1]):
                 model.save(BEST_MODEL_PATH)
                 print("!"*20, "NEW BEST PREDICTOR", "!"*20)
                 print("!"*60)
