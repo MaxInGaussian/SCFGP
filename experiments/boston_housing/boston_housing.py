@@ -19,7 +19,7 @@ metric = 'nmse'
 visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
 nfeats_range = [10, 90]
 algo = {
-    'algo': 'adamax',
+    'algo': 'adam',
     'algo_params': {
         'learning_rate':0.01,
         'beta1':0.9,
@@ -30,9 +30,9 @@ algo = {
 opt_params = {
     'obj': metric,
     'algo': algo,
-    'batches_num': 8,
+    'batches_num': 5,
     'cvrg_tol': 1e-5,
-    'max_cvrg_iter': 18,
+    'max_cvrg_iter': 28,
     'max_iter': 500
 }
 
