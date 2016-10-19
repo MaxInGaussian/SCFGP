@@ -15,8 +15,8 @@ BEST_MODEL_PATH = 'boston_scfgp.pkl'
 ############################ Prior Setting ############################
 reps_per_feats = 20
 metric = 'nmse'
-visualizer = None
-# visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
+# visualizer = None
+visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
 nfeats_range = [10, 90]
 algo = {
     'algo': 'adamax',
@@ -88,7 +88,7 @@ for nfeats in nfeats_choices:
     results = {en:[] for en in evals.keys()}
     for round in range(reps_per_feats):
         X_train, y_train, X_valid, y_valid = load_boston_data()
-        model = SCFGP(nfeats, y_scaling_method='log-normal')
+        model = SCFGP(nfeats=nfeats, y_scaling_method='log-normal')
         if(funcs is None):
             model.set_data(X_train, y_train)
             model.optimize(X_valid, y_valid, None, visualizer, **opt_params)

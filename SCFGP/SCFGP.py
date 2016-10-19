@@ -31,8 +31,9 @@ class SCFGP(object):
     X, y, hyper, Li, alpha, train_func, pred_func = [None]*7
     
     
-    def __init__(self, nfeats=18, evals=None, X_scaling_method='min-max',
-        y_scaling_method='normal', verbose=False):
+    def __init__(self, sparsity=5, nfeats=18, evals=None,
+        X_scaling_method='min-max', y_scaling_method='normal', verbose=False):
+        self.S = sparsity
         self.M = nfeats
         self.X_scaler = Scaler(X_scaling_method)
         self.y_scaler = Scaler(y_scaling_method)
@@ -58,38 +59,52 @@ class SCFGP(object):
         self.ID = ''.join(
             chr(npr.choice([ord(c) for c in (
                 string.ascii_uppercase+string.digits)])) for _ in range(5))
-        self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
+        self.NAME = "SCFGP (Sparsity=%d, Fourier Features=%d)"%(self.S, self.M)
 
     def init_params(self):
         a = npr.randn(1)
         b = npr.randn(1)
         c = npr.randn(1)
-        F = npr.randn(self.D*self.M)
-        Z = npr.randn(self.D*self.M)
-        P = 2*np.pi*npr.rand(self.M)
-        self.params = Ts(np.concatenate([a, b, c, F, Z, P]))
+        l_f = npr.randn(self.D*self.S)
+        r_f = npr.randn(self.M*self.S)
+        l_z = npr.randn(self.D*self.S)
+        r_z = npr.randn(self.M*self.S)
+        l_p = 2*np.pi*npr.rand(self.S)
+        p = 2*np.pi*npr.rand(self.M)
+        self.params = Ts(np.concatenate([a, b, c, l_f, r_f, l_z, r_z, l_p, p]))
     
     def unpack_params(self, hyper):
         t_ind = 0
         a = hyper[0];t_ind+=1
         b = hyper[1];t_ind+=1
         c = hyper[2];t_ind+=1
-        f = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
-        F = TT.reshape(f, (self.D, self.M))
-        z = hyper[t_ind:t_ind+self.M*self.D];t_ind+=self.M*self.D
-        Z = TT.reshape(z, (self.D, self.M))
+        l_f = hyper[t_ind:t_ind+self.D*self.S];t_ind+=self.D*self.S
+        l_F = TT.reshape(l_f, (self.D, self.S))
+        r_f = hyper[t_ind:t_ind+self.M*self.S];t_ind+=self.M*self.S
+        r_F = TT.reshape(r_f, (self.M, self.S))
+        F = l_F.dot(r_F.T)
+        l_z = hyper[t_ind:t_ind+self.D*self.S];t_ind+=self.D*self.S
+        l_Z = TT.reshape(l_z, (self.D, self.S))
+        r_z = hyper[t_ind:t_ind+self.M*self.S];t_ind+=self.M*self.S
+        r_Z = TT.reshape(r_z, (self.M, self.S))
+        Z = l_Z.dot(r_Z.T)
+        l_p = hyper[t_ind:t_ind+self.S];t_ind+=self.S
+        l_P = TT.reshape(l_p, (1, self.S))
         p = hyper[t_ind:t_ind+self.M];t_ind+=self.M
         P = TT.reshape(p, (1, self.M))
-        return a, b, c, F, Z, P
+        l_FC = l_P-TT.sum(l_Z*l_F, 0)[None, :]
+        FC = P-TT.sum(Z*F, 0)[None, :]
+        return a, b, c, l_F, F, l_FC, FC
     
     def build_theano_models(self, algo, algo_params):
         epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-TT.log(sig)
         X, y = TT.dmatrices('X', 'y')
         params = TT.dvector('params')
-        a, b, c, F, Z, P = self.unpack_params(params)
+        a, b, c, l_F, F, l_FC, FC = self.unpack_params(params)
         sig2_n, sig_f = TT.exp(2*a), TT.exp(b)
-        FF = TT.dot(X, F)+(P-TT.sum(Z*F, 0)[None, :])
+        l_FF = TT.dot(X, l_F)+l_FC
+        FF = TT.concatenate((l_FF, TT.dot(X, F)+FC), 1)
         Phi = TT.concatenate((TT.cos(FF), TT.sin(FF)), 1)
         Phi = sig_f*TT.sqrt(2./self.M)*Phi
         noise = TT.log(1+TT.exp(c))
@@ -126,7 +141,8 @@ class SCFGP(object):
         self.train_iter_func = Tf(train_inputs, train_outputs,
             givens=[(params, self.params)], updates=updates)
         Xs, Li, alpha = TT.dmatrices('Xs', 'Li', 'alpha')
-        FFs = TT.dot(Xs, F)+(P-TT.sum(Z*F, 0)[None, :])
+        l_FFs = TT.dot(Xs, l_F)+l_FC
+        FFs = TT.concatenate((l_FFs, TT.dot(Xs, F)+FC), 1)
         Phis = TT.concatenate((TT.cos(FFs), TT.sin(FFs)), 1)
         Phis = sig_f*TT.sqrt(2./self.M)*Phis
         mu_pred = TT.dot(Phis, alpha)
@@ -287,12 +303,12 @@ class SCFGP(object):
             load_dict = pickle.load(load_f)
         for varn, var in load_dict.items():
             self.__dict__[varn] = var
-        self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
+        self.NAME = "SCFGP (Sparsity=%d, Fourier Features=%d)"%(self.S, self.M)
 
     def _print_current_evals(self):
         for metric in sorted(self.evals.keys()):
             best_perform_eval = self.evals[metric][1][self.min_obj_ind]
-            self.message(self.NAME, "%15s = %.4e"%(metric, best_perform_eval))
+            self.message(self.NAME, "%8s = %.4e"%(metric, best_perform_eval))
 
 
 
