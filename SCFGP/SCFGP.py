@@ -204,18 +204,22 @@ class SCFGP(object):
             self.evals['NMSE'][1].append(0)
             self.evals['MNLP'][1].append(0)
             self.evals['SCORE'][1].append(0)
-        self.best_perform_ind = 0
+        self.min_obj_ind = 0
         min_obj_val, argmin_params, cvrg_iter = np.Infinity, None, 0
         for iter in range(max_iter):
-            cost_sum, params_list, batch_count = 0, [], 0
-            for X_b, y_b in self.minibatches(self.X, self.y, int(self.N**0.5)):
-                params_list.append(self.params.get_value())
-                cost, self.alpha, self.Li = self.train_iter_func(X_b, y_b)
-                cost_sum += cost;batch_count += 1
-                if(batch_count == nbatches):
-                    break
-            self.params = Ts(np.median(np.array(params_list), axis=0))
-            self.evals['COST'][1].append(np.double(cost_sum/batch_count))
+            if(nbatches > 1):
+                cost_sum, params_list, batch_count = 0, [], 0
+                for X, y in self.minibatches(self.X, self.y, int(self.N**0.5)):
+                    params_list.append(self.params.get_value())
+                    cost, self.alpha, self.Li = self.train_iter_func(X, y)
+                    cost_sum += cost;batch_count += 1
+                    if(batch_count == nbatches):
+                        break
+                self.params = Ts(np.median(np.array(params_list), axis=0))
+                self.evals['COST'][1].append(np.double(cost_sum/batch_count))
+            else:
+                cost, self.alpha, self.Li = self.train_iter_func(self.X, self.y)
+                self.evals['COST'][1].append(cost)
             self.evals['TIME(s)'][1].append(time.time()-train_start_time)
             if(Xv is not None and yv is not None):
                 self.predict(Xv, yv)
@@ -234,7 +238,7 @@ class SCFGP(object):
                 else:
                     cvrg_iter = 0
                 min_obj_val = obj_val
-                self.best_perform_ind = len(self.evals['COST'][1])-1
+                self.min_obj_ind = len(self.evals['COST'][1])-1
                 argmin_params = self.params.copy()
             else:
                 cvrg_iter += 1
@@ -246,7 +250,7 @@ class SCFGP(object):
         self.evals['TIME(s)'][1].append(time.time()-train_start_time)
         if(Xv is not None and yv is not None):
             self.predict(Xv, yv)
-        self.best_perform_ind = len(self.evals['COST'][1])-1
+        self.min_obj_ind = len(self.evals['COST'][1])-1
         disp = self.verbose
         self.verbose = True
         self.message("-"*19, "OPTIMIZATION RESULT", "-"*19)
@@ -289,7 +293,7 @@ class SCFGP(object):
 
     def _print_current_evals(self):
         for metric in sorted(self.evals.keys()):
-            best_perform_eval = self.evals[metric][1][self.best_perform_ind]
+            best_perform_eval = self.evals[metric][1][self.min_obj_ind]
             self.message(self.NAME, "%8s = %.4e"%(metric, best_perform_eval))
 
 

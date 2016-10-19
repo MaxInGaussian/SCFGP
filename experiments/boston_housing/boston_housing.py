@@ -17,6 +17,30 @@ except:
     from SCFGP import SCFGP, Visualizer
     print("done.")
 
+############################ Prior Setting ############################
+
+reps_per_model = 50
+metric = 'COST'
+nfeats_range = [50, 100]
+algo = {
+    'algo': 'adamax',
+    'algo_params': {
+        'learning_rate':0.01,
+        'beta1':0.9,
+        'beta2':0.999,
+        'epsilon':1e-8
+    }
+}
+opt_params = {
+    'obj': metric,
+    'algo': algo,
+    'batches_num': 18,
+    'cvrg_tol': 1e-5,
+    'max_cvrg_iter': 18,
+    'max_iter': 500
+}
+
+############################ General Methods ############################
 def test_xgb_regressor():
     import xgboost as xgb
     from sklearn.grid_search import GridSearchCV
@@ -49,9 +73,9 @@ def load_boston_data(prop=400/506):
     X_valid, y_valid = X[valid_inds].copy(), y[valid_inds].copy()
     return X_train, y_train, X_valid, y_valid
 
-trials_per_model = 50
 X_train, y_train, X_valid, y_valid = load_boston_data()
-feature_size_choices = [int(X_train.shape[0]**0.5*(i+1)) for i in range(5)]
+nfeats_range_length = nfeats_range[1]-nfeats_range[0]
+nfeats_choices = [nfeats_range[0]+(i*nfeats_range_length)//5 for i in range(5)]
 evals = {
     "SCORE": ["Model Selection Score", []],
     "COST": ["Hyperparameter Selection Cost", []],
@@ -62,12 +86,12 @@ evals = {
     "MNLP": ["Mean Negative Log Probability", []],
     "TIME(s)": ["Training Time", []],
 }
-for feature_size in feature_size_choices:
+for nfeats in nfeats_choices:
     funcs = None
     results = {en:[] for en in evals.keys()}
-    for round in range(trials_per_model):
+    for round in range(reps_per_model):
         X_train, y_train, X_valid, y_valid = load_boston_data()
-        model = SCFGP(feature_size, y_scaling_method='log-normal')
+        model = SCFGP(nfeats, y_scaling_method='log-normal')
         plt.close()
         visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
         if(funcs is None):
@@ -111,14 +135,14 @@ for en, (metric_name, metric_result) in evals.items():
     f = plt.figure(figsize=(8, 6), facecolor='white', dpi=120)
     ax = f.add_subplot(111)
     maxv, minv = 0, 1e5
-    for i in range(len(feature_size_choices)):
+    for i in range(len(nfeats_choices)):
         maxv = max(maxv, metric_result[i][0])
         minv = min(minv, metric_result[i][0])
-        ax.text(feature_size_choices[i], metric_result[i][0], '%.2f' % (
+        ax.text(nfeats_choices[i], metric_result[i][0], '%.2f' % (
             metric_result[i][0]), fontsize=5)
-    line = ax.errorbar(feature_size_choices, [metric_result[i][0] for i in
-        range(len(feature_size_choices))], fmt='-o')
-    ax.set_xlim([min(feature_size_choices)-10, max(feature_size_choices)+10])
+    line = ax.errorbar(nfeats_choices, [metric_result[i][0] for i in
+        range(len(nfeats_choices))], fmt='-o')
+    ax.set_xlim([min(nfeats_choices)-10, max(nfeats_choices)+10])
     ax.set_ylim([minv-(maxv-minv)*0.15,maxv+(maxv-minv)*0.45])
     plt.title(metric_name, fontsize=18)
     plt.xlabel('Number of Fourier Features', fontsize=13)
