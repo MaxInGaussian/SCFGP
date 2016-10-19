@@ -12,9 +12,9 @@ from theano import config as Tc, shared as Ts, function as Tf, tensor as TT
 from theano.sandbox import linalg as Tlin
 import downhill
 
+from .ParamUpdate import UpdateRules as OPT
 from .Scaler import Scaler
 from .Optimizer import Optimizer
-from .Updates import *
 
 Tc.mode = 'FAST_RUN'
 Tc.optimizer = 'fast_run'
@@ -83,7 +83,7 @@ class SCFGP(object):
         P = TT.reshape(p, (1, self.M))
         return a, b, c, F, Z, P
     
-    def build_theano_models(self):
+    def build_theano_models(self, algo, algo_params):
         epsilon = 1e-6
         kl = lambda mu, sig: sig+mu**2-TT.log(sig)
         X, y = TT.dmatrices('X', 'y')
@@ -118,9 +118,7 @@ class SCFGP(object):
         penelty = kl(mu_w, sig_w)
         cost = (nlml+penelty)/X.shape[0]
         grads = TT.grad(cost, params)
-        scaled_grads = total_norm_constraint([grads], 1.)
-        updates = adadelta(scaled_grads, [self.params],
-            learning_rate=0.05, rho=0.95, epsilon=epsilon)
+        updates = getattr(OPT, algo)([grads], [self.params], **algo_params)
         updates = apply_nesterov_momentum(updates, [self.params], momentum=0.9)
         train_inputs = [X, y]
         train_outputs = [cost, alpha, Li]
@@ -143,7 +141,7 @@ class SCFGP(object):
         return self.train_func, self.train_iter_func, self.pred_func
 
     def set_data(self, X, y):
-        self.message("-"*50, "\nNormalizing SCFGP training data...")
+        self.message("-"*60, "\nNormalizing SCFGP training data...")
         self.X_scaler.fit(X)
         self.y_scaler.fit(y)
         self.X = self.X_scaler.forward_transform(X)
@@ -151,12 +149,11 @@ class SCFGP(object):
         self.message("done.")
         self.N, self.D = self.X.shape
         if('train_func' not in self.__dict__.keys()):
-            self.message("-"*50, "\nInitializing SCFGP hyperparameters...")
+            self.message("-"*60, "\nInitializing SCFGP hyperparameters...")
             self.init_params()
             self.message("done.")
         else:
-            cost, self.alpha, self.Li =\
-                self.train_func(self.X, self.y, self.hyper)
+            cost, self.alpha, self.Li = self.train_func(self.X, self.y)
     
     def minibatches(self, X, y, batchsize, shuffle=True):
         assert len(X) == len(y)
@@ -170,20 +167,28 @@ class SCFGP(object):
                 batch = slice(start_ind, start_ind+batchsize)
             yield X[batch], y[batch]
 
-    def optimize(self, obj='cost', Xv=None, yv=None, funcs=None,
-        visualizer=None, opt_params=None):
-        if(opt_params is None):
-            opt_params = {
-                'batches_num': 18,
-                'cvrg_tol': 1e-4,
-                'max_cvrg_iter': 28,
-                'max_iter': 500
+    def optimize(self, Xv=None, yv=None, funcs=None, visualizer=None, **args):
+        obj = 'cost' if 'obj' not in args.keys() else args['obj']
+        algo = {'algo': None} if 'algo' not in args.keys() else args['algo']
+        nbatches = 18 if 'nbatches' not in args.keys() else args['nbatches']
+        cvrg_tol = 1e-4 if 'cvrg_tol' not in args.keys() else args['cvrg_tol']
+        max_cvrg = 18 if 'max_cvrg' not in args.keys() else args['max_cvrg']
+        max_iter = 500 if 'max_iter' not in args.keys() else args['max_iter']
+        if(algo['algo'] not in OPT.algos):
+            algo = {
+                'algo': 'adamax',
+                'algo_params': {
+                    'learning_rate':0.01,
+                    'beta1':0.9,
+                    'beta2':0.999,
+                    'epsilon':1e-8
+                }
             }
         for metric in self.evals.keys():
             self.evals[metric][1] = []
         if(funcs is None):
             self.message("-"*50, "\nCompiling SCFGP theano model...")
-            self.build_theano_models()
+            self.build_theano_models(algo['algo'], algo['algo_params'])
             self.message("done.")
         else:
             self.train_func, self.train_iter_func, self.pred_func = funcs
@@ -201,28 +206,28 @@ class SCFGP(object):
             self.evals['SCORE'][1].append(0)
         self.best_perform_ind = 0
         min_obj_val, argmin_params, cvrg_iter = np.Infinity, None, 0
-        for iter in range(opt_params['max_iter']):
+        for iter in range(max_iter):
             cost_sum, params_list, batch_count = 0, [], 0
             for X_b, y_b in self.minibatches(self.X, self.y, int(self.N**0.5)):
                 params_list.append(self.params.get_value())
                 cost, self.alpha, self.Li = self.train_iter_func(X_b, y_b)
                 cost_sum += cost;batch_count += 1
-                if(batch_count == opt_params['batches_num']):
+                if(batch_count == nbatches):
                     break
             self.params = Ts(np.median(np.array(params_list), axis=0))
             self.evals['COST'][1].append(np.double(cost_sum/batch_count))
             self.evals['TIME(s)'][1].append(time.time()-train_start_time)
             if(Xv is not None and yv is not None):
                 self.predict(Xv, yv)
-            if(iter%(opt_params['max_iter']//10) == 1):
-                self.message("-"*12, "VALIDATION ITERATION", iter, "-"*12)
+            if(iter%(max_iter//10) == 1):
+                self.message("-"*13, "VALIDATION ITERATION", iter, "-"*13)
                 self._print_current_evals()
             if(visualizer is not None and iter%2 == 1):
                 animate(iter)
                 plt.pause(0.1)
             obj_val = self.evals[obj.upper()][1][-1]
             if(obj_val < min_obj_val):
-                if(min_obj_val-obj_val < opt_params['cvrg_tol']):
+                if(min_obj_val-obj_val < cvrg_tol):
                     cvrg_iter += 1
                 else:
                     cvrg_iter = 0
@@ -231,7 +236,7 @@ class SCFGP(object):
                 argmin_params = self.params.copy()
             else:
                 cvrg_iter += 1
-            if(iter > 30 and cvrg_iter > opt_params['max_cvrg_iter']):
+            if(iter > 30 and cvrg_iter > max_cvrg):
                 break
         self.params = argmin_params.copy()
         cost, self.alpha, self.Li = self.train_func(self.X, self.y)
@@ -242,9 +247,9 @@ class SCFGP(object):
         self.best_perform_ind = len(self.evals['COST'][1])-1
         disp = self.verbose
         self.verbose = True
-        self.message("-"*14, "OPTIMIZATION RESULT", "-"*14)
+        self.message("-"*16, "OPTIMIZATION RESULT", "-"*16)
         self._print_current_evals()
-        self.message("-"*50)
+        self.message("-"*60)
         self.verbose = disp
 
     def predict(self, Xs, ys=None):
@@ -281,14 +286,9 @@ class SCFGP(object):
         self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
 
     def _print_current_evals(self):
-        self.message(self.NAME, "   TIME = %.4f"%(self.evals['TIME(s)'][1][self.best_perform_ind]))
-        self.message(self.NAME, "  SCORE = %.4f"%(self.evals['SCORE'][1][self.best_perform_ind]))
-        self.message(self.NAME, "   COST = %.4f"%(self.evals['COST'][1][self.best_perform_ind]))
-        self.message(self.NAME, "    MAE = %.4f"%(self.evals['MAE'][1][self.best_perform_ind]))
-        self.message(self.NAME, "   NMAE = %.4f"%(self.evals['NMAE'][1][self.best_perform_ind]))
-        self.message(self.NAME, "    MSE = %.4f"%(self.evals['MSE'][1][self.best_perform_ind]))
-        self.message(self.NAME, "   NMSE = %.4f"%(self.evals['NMSE'][1][self.best_perform_ind]))
-        self.message(self.NAME, "   MNLP = %.4f"%(self.evals['MNLP'][1][self.best_perform_ind]))
+        for metric in self.evals.keys():
+            best_perform_eval = self.evals[metric][1][self.best_perform_ind]
+            self.message(self.NAME, "%8s = %.2e"%(metric, best_perform_eval))
 
 
 
