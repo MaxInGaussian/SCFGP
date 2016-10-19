@@ -17,7 +17,7 @@ reps_per_feats = 20
 metric = 'nmse'
 visualizer = None
 # visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
-nfeats_range = [30, 100]
+nfeats_range = [10, 90]
 algo = {
     'algo': 'adamax',
     'algo_params': {
