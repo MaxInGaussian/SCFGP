@@ -97,7 +97,9 @@ class UpdateRules():
         return updates
     
     @staticmethod
-    def sgd(params, grads, learning_rate=0.01):
+    def sgd(params, grads,
+        learning_rate=0.01,
+        **args):
         """Stochastic Gradient Descent (SGD) updates
         Generates update expressions of the form:
         *``params := params-learning_rate*gradient``
@@ -117,7 +119,10 @@ class UpdateRules():
         return updates
     
     @staticmethod
-    def adagrad(params, grads, learning_rate=0.01, epsilon=1e-6):
+    def adagrad(params, grads,
+        learning_rate=0.01,
+        epsilon=1e-6,
+        **args):
         """Adagrad updates
         Scale learning rates by dividing with the square root of accumulated
         squared gradients. See [1]_ for further description.
@@ -159,7 +164,11 @@ class UpdateRules():
         return updates
     
     @staticmethod
-    def rmsprop(params, grads, learning_rate=0.01, rho=0.9, epsilon=1e-6):
+    def rmsprop(params, grads,
+        learning_rate=0.01,
+        rho=0.9,
+        epsilon=1e-6,
+        **args):
         """RMSProp updates
         Scale learning rates by dividing with the moving average of the root mean
         squared (RMS) gradients. See [1]_ for further description.
@@ -204,7 +213,11 @@ class UpdateRules():
         return updates
     
     @staticmethod
-    def adadelta(params, grads, learning_rate=0.01, rho=0.95, epsilon=1e-6):
+    def adadelta(params, grads,
+        learning_rate=0.01,
+        rho=0.95,
+        epsilon=1e-6,
+        **args):
         """ Adadelta updates
         Scale learning rates by the ratio of accumulated gradients to accumulated
         updates, see [1]_ and notes for further description.
@@ -263,7 +276,12 @@ class UpdateRules():
         return updates
     
     @staticmethod
-    def adam(params, grads, learning_rate=0.01, beta1=0.9, beta2=0.99, epsilon=1e-8):
+    def adam(params, grads,
+        learning_rate=0.01,
+        beta1=0.9,
+        beta2=0.99,
+        epsilon=1e-8,
+        **args):
         """Adam updates
         Adam updates implemented as in [1]_.
         Parameters
@@ -313,8 +331,12 @@ class UpdateRules():
         return updates
     
     @staticmethod
-    def adamax(params, grads, learning_rate=0.01, beta1=0.9,
-            beta2=0.999, epsilon=1e-8):
+    def adamax(params, grads,
+        learning_rate=0.01,
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1e-8,
+        **args):
         """Adamax updates
         Adamax updates implemented as in [1]_. This is a variant of of the Adam
         algorithm based on the infinity norm.

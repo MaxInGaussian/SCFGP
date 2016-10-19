@@ -8,18 +8,14 @@ import os, sys
 import numpy as np
 import numpy.random as npr
 import matplotlib.pyplot as plt
-try:
-    from SCFGP import SCFGP, Visualizer
-except:
-    print("SCFGP is not installed yet! Trying to call directly from source...")
-    from sys import path
-    path.append("../../")
-    from SCFGP import SCFGP, Visualizer
-    print("done.")
+from SCFGP import SCFGP, Visualizer
+
+BEST_MODEL_PATH = 'boston_scfgp.pkl'
 
 ############################ Prior Setting ############################
 reps_per_feats = 50
-metric = 'COST'
+metric = 'score'
+visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'), metric)
 nfeats_range = [30, 100]
 algo = {
     'algo': 'adamax',
@@ -92,37 +88,26 @@ for nfeats in nfeats_choices:
     for round in range(reps_per_feats):
         X_train, y_train, X_valid, y_valid = load_boston_data()
         model = SCFGP(nfeats, y_scaling_method='log-normal')
-        plt.close()
-        visualizer = Visualizer(plt.figure(figsize=(8, 6), facecolor='white'))
         if(funcs is None):
             model.set_data(X_train, y_train)
-            model.optimize(
-                obj='cost',
-                Xv=X_valid,
-                yv=y_valid,
-                visualizer=visualizer
-            )
+            model.optimize(X_valid, y_valid, None, visualizer, **opt_params)
             funcs = model.get_compiled_funcs()
         else:
             model.set_data(X_train, y_train)
-            model.optimize(
-                obj='cost',
-                Xv=X_valid,
-                yv=y_valid,
-                funcs=funcs,
-                visualizer=visualizer
-            )
-        model.predict(X_valid, y_valid)
-        if(not os.path.exists("boston_scfgp.pkl")):
-            model.save("boston_scfgp.pkl")
-            best_model = model
+            model.optimize(X_valid, y_valid, funcs, visualizer, **opt_params)
+        print("!"*60)
+        if(not os.path.exists(BEST_MODEL_PATH)):
+            model.save(BEST_MODEL_PATH)
+            print("!"*20, "NEW BEST PREDICTOR", "!"*20)
+            print("!"*60)
         else:
-            best_model = SCFGP(verbose=False)
-            best_model.load("boston_scfgp.pkl")
+            best_model = SCFGP()
+            best_model.load(BEST_MODEL_PATH)
             best_model.predict(X_valid, y_valid)
             if(model.evals['SCORE'][1][-1] > best_model.evals['SCORE'][1][-1]):
-                model.save("boston_scfgp.pkl")
-                best_model = model
+                model.save(BEST_MODEL_PATH)
+                print("!"*20, "NEW BEST PREDICTOR", "!"*20)
+                print("!"*60)
         for metric in evals.keys():
             results[metric].append(model.evals[metric][1][-1])
     for en in evals.keys():

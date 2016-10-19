@@ -253,7 +253,7 @@ class SCFGP(object):
         self.min_obj_ind = len(self.evals['COST'][1])-1
         disp = self.verbose
         self.verbose = True
-        self.message("-"*19, "OPTIMIZATION RESULT", "-"*19)
+        self.message("-"*19, "OPTIMIZATION RESULT", "-"*20)
         self._print_current_evals()
         self.message("-"*60)
         self.verbose = disp
