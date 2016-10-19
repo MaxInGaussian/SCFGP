@@ -13,9 +13,9 @@ class Visualizer(object):
     
     model, fig = None, None
     
-    def __init__(self, fig, eval='NMSE', plot_limit=100):
+    def __init__(self, fig, eval='NMSE', plot_limit=150):
         self.fig = fig
-        self.eval = eval
+        self.eval = eval.upper()
         self.plot_limit = plot_limit
     
     def train_with_plot(self):
@@ -72,11 +72,11 @@ class Visualizer(object):
             ax1.legend(handles, labels, loc='upper center',
                 bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)   
             data_x2.append(self.model.evals['TIME(s)'][1][-1])
-            val = self.model.evals[self.eval.upper()][1][self.model.min_obj_ind]
+            val = self.model.evals[self.eval][1][self.model.min_obj_ind]
             data_y2.append(val)          
             ax2.cla()
             ax2.plot(data_x2[-self.plot_limit:], data_y2[-self.plot_limit:],
-                color='b', linewidth=2.0, label=self.eval.upper())
+                color='b', linewidth=2.0, label=self.eval)
             handles, labels = ax2.get_legend_handles_labels()
             ax2.legend(handles, labels, loc='upper center',
                 bbox_to_anchor=(0.5, 1.05), ncol=1, fancybox=True)

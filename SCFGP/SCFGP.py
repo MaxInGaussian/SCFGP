@@ -168,7 +168,8 @@ class SCFGP(object):
             yield X[batch], y[batch]
 
     def optimize(self, Xv=None, yv=None, funcs=None, visualizer=None, **args):
-        obj = 'cost' if 'obj' not in args.keys() else args['obj']
+        obj = 'COST' if 'obj' not in args.keys() else args['obj'].upper()
+        obj = 'COST' if obj not in self.evals.keys() else obj
         algo = {'algo': None} if 'algo' not in args.keys() else args['algo']
         nbatches = 18 if 'nbatches' not in args.keys() else args['nbatches']
         cvrg_tol = 1e-4 if 'cvrg_tol' not in args.keys() else args['cvrg_tol']
@@ -197,7 +198,7 @@ class SCFGP(object):
             visualizer.model = self
             animate = visualizer.train_with_plot()
         if(Xv is None or yv is None):
-            obj='cost'
+            obj = 'COST'
             self.evals['MAE'][1].append(0)
             self.evals['NMAE'][1].append(0)
             self.evals['MSE'][1].append(0)
@@ -229,9 +230,7 @@ class SCFGP(object):
             if(visualizer is not None and iter%2 == 1):
                 animate(iter)
                 plt.pause(0.1)
-            obj_val = self.evals[obj.upper()][1][-1]
-            if(obj.upper() == 'SCORE'):
-                obj_val = -obj_val
+            obj_val = self.evals[obj][1][-1]
             if(obj_val < min_obj_val):
                 if(min_obj_val-obj_val < cvrg_tol):
                     cvrg_iter += 1
@@ -271,7 +270,7 @@ class SCFGP(object):
             self.evals['NMSE'][1].append(self.evals['MSE'][1][-1]/np.var(ys))
             self.evals['MNLP'][1].append(0.5*np.mean(((
                 ys-mu_y)/std_y)**2+np.log(2*np.pi*std_y**2)))
-            self.evals['SCORE'][1].append(np.exp(
+            self.evals['SCORE'][1].append(-np.exp(
                 -self.evals['MNLP'][1][-1])/self.evals['NMSE'][1][-1])
         return mu_y, std_y
 

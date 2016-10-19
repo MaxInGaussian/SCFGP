@@ -104,7 +104,8 @@ for nfeats in nfeats_choices:
             best_model = SCFGP()
             best_model.load(BEST_MODEL_PATH)
             best_model.predict(X_valid, y_valid)
-            if(model.evals['SCORE'][1][-1] > best_model.evals['SCORE'][1][-1]):
+            if(model.evals[metric.upper()][1][-1] <
+                best_model.evals[metric.upper()][1][-1]):
                 model.save(BEST_MODEL_PATH)
                 print("!"*20, "NEW BEST PREDICTOR", "!"*20)
                 print("!"*60)
