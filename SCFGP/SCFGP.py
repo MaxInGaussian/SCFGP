@@ -293,7 +293,7 @@ class SCFGP(object):
     def _print_current_evals(self):
         for metric in sorted(self.evals.keys()):
             best_perform_eval = self.evals[metric][1][self.min_obj_ind]
-            self.message(self.NAME, "%8s = %.4e"%(metric, best_perform_eval))
+            self.message(self.NAME, "%15s = %.4e"%(metric, best_perform_eval))
 
 
 
