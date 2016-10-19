@@ -55,7 +55,7 @@ class Visualizer(object):
         ax2 = self.fig.add_subplot(212)
         plt.xlabel('TIME(s)', fontsize=13)
         def animate(i):
-            if(i == 1):
+            if(i == 0):
                 data_x1, data_y1, data_x2, data_y2 = [], [], [], []
             else:
                 data_x1 = ax1.lines[0].get_xdata().tolist()
