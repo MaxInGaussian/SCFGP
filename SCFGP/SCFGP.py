@@ -125,7 +125,7 @@ class SCFGP(object):
         nlml = 2*TT.log(TT.diagonal(L)).sum()+2*enll.sum()+1./sig2_n*(
             (y**2).sum()-(beta**2).sum())+2*(X.shape[0]-self.M)*a
         penelty = (kl(mu_w, sig_w)*self.M+kl(mu_l, sig_l)*self.S)/(self.S+self.M)
-        cost = (nlml+penelty*self.M)/X.shape[0]
+        cost = (nlml+penelty)/X.shape[0]
         grads = TT.grad(cost, params)
         updates = getattr(OPT, algo)(self.params, grads, **algo_params)
         updates = getattr(OPT, 'apply_nesterov_momentum')(updates, momentum=0.9)
@@ -187,7 +187,7 @@ class SCFGP(object):
         max_iter = 500 if 'max_iter' not in args.keys() else args['max_iter']
         if(algo['algo'] not in OPT.algos):
             algo = {
-                'algo': 'adamax',
+                'algo': 'adam',
                 'algo_params': {
                     'learning_rate':0.01,
                     'beta1':0.9,

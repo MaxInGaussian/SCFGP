@@ -15,8 +15,8 @@ BEST_MODEL_PATH = 'boston_scfgp.pkl'
 ############################ Prior Setting ############################
 reps_per_feats = 20
 plot_metric = 'nmse'
-select_params_metric = 'nmse'
-select_model_metric = 'nmse'
+select_params_metric = 'cost'
+select_model_metric = 'score'
 # visualizer = None
 fig = plt.figure(figsize=(8, 6), facecolor='white')
 visualizer = Visualizer(fig, plot_metric)
@@ -33,7 +33,7 @@ algo = {
 opt_params = {
     'obj': select_params_metric,
     'algo': algo,
-    'nbatches': 5,
+    'nbatches': 1,
     'cvrg_tol': 1e-5,
     'max_cvrg': 28,
     'max_iter': 500
