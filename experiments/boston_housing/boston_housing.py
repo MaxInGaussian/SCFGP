@@ -30,7 +30,7 @@ algo = {
 opt_params = {
     'obj': metric,
     'algo': algo,
-    'batches_num': 1,
+    'batches_num': 18,
     'cvrg_tol': 1e-5,
     'max_cvrg_iter': 18,
     'max_iter': 500
