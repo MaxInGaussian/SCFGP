@@ -18,10 +18,9 @@ except:
     print("done.")
 
 ############################ Prior Setting ############################
-
-reps_per_model = 50
+reps_per_feats = 50
 metric = 'COST'
-nfeats_range = [50, 100]
+nfeats_range = [30, 100]
 algo = {
     'algo': 'adamax',
     'algo_params': {
@@ -73,9 +72,10 @@ def load_boston_data(prop=400/506):
     X_valid, y_valid = X[valid_inds].copy(), y[valid_inds].copy()
     return X_train, y_train, X_valid, y_valid
 
+############################ Training Phase ############################
 X_train, y_train, X_valid, y_valid = load_boston_data()
 nfeats_range_length = nfeats_range[1]-nfeats_range[0]
-nfeats_choices = [nfeats_range[0]+(i*nfeats_range_length)//5 for i in range(5)]
+nfeats_choices = [nfeats_range[0]+(i*nfeats_range_length)//8 for i in range(8)]
 evals = {
     "SCORE": ["Model Selection Score", []],
     "COST": ["Hyperparameter Selection Cost", []],
@@ -89,7 +89,7 @@ evals = {
 for nfeats in nfeats_choices:
     funcs = None
     results = {en:[] for en in evals.keys()}
-    for round in range(reps_per_model):
+    for round in range(reps_per_feats):
         X_train, y_train, X_valid, y_valid = load_boston_data()
         model = SCFGP(nfeats, y_scaling_method='log-normal')
         plt.close()
@@ -128,6 +128,7 @@ for nfeats in nfeats_choices:
     for en in evals.keys():
         evals[en][1].append((np.mean(results[en]), np.std(results[en])))
 
+############################ Plot Performances ############################
 import os
 if not os.path.exists('plots'):
     os.mkdir('plots')
