@@ -66,12 +66,10 @@ class SCFGP(object):
         b = npr.randn(1)
         c = npr.randn(1)
         l_f = npr.randn(self.D*self.S)
-        r_f = npr.randn(self.M*self.S)
-        l_z = npr.randn(self.D*self.S)
-        r_z = npr.randn(self.M*self.S)
+        r_f = npr.rand(self.M*self.S)
         l_p = 2*np.pi*npr.rand(self.S)
         p = 2*np.pi*npr.rand(self.M)
-        self.params = Ts(np.concatenate([a, b, c, l_f, r_f, l_z, r_z, l_p, p]))
+        self.params = Ts(np.concatenate([a, b, c, l_f, r_f, l_p, p]))
     
     def unpack_params(self, hyper):
         t_ind = 0
@@ -83,17 +81,12 @@ class SCFGP(object):
         r_f = hyper[t_ind:t_ind+self.M*self.S];t_ind+=self.M*self.S
         r_F = TT.reshape(r_f, (self.M, self.S))
         F = l_F.dot(r_F.T)
-        l_z = hyper[t_ind:t_ind+self.D*self.S];t_ind+=self.D*self.S
-        l_Z = TT.reshape(l_z, (self.D, self.S))
-        r_z = hyper[t_ind:t_ind+self.M*self.S];t_ind+=self.M*self.S
-        r_Z = TT.reshape(r_z, (self.M, self.S))
-        Z = l_Z.dot(r_Z.T)
         l_p = hyper[t_ind:t_ind+self.S];t_ind+=self.S
         l_P = TT.reshape(l_p, (1, self.S))
         p = hyper[t_ind:t_ind+self.M];t_ind+=self.M
         P = TT.reshape(p, (1, self.M))
-        l_FC = l_P-TT.sum(l_Z*l_F, 0)[None, :]
-        FC = P-TT.sum(Z*F, 0)[None, :]
+        l_FC = l_P-TT.mean(l_F, 0)[None, :]
+        FC = P-TT.mean(F, 0)[None, :]
         return a, b, c, l_F, F, l_FC, FC
     
     def build_theano_models(self, algo, algo_params):
@@ -118,6 +111,8 @@ class SCFGP(object):
         mu_f = TT.dot(Phi, alpha)
         var_f = (TT.dot(Phi, Li.T)**2).sum(1)[:, None]
         dsp = noise*(var_f+1)
+        mu_l = TT.sum(TT.mean(l_F, axis=1))
+        sig_l = TT.sum(TT.std(l_F, axis=1))
         mu_w = TT.sum(TT.mean(F, axis=1))
         sig_w = TT.sum(TT.std(F, axis=1))
         hermgauss = np.polynomial.hermite.hermgauss(30)
@@ -129,8 +124,8 @@ class SCFGP(object):
         enll = herm_w*nlk
         nlml = 2*TT.log(TT.diagonal(L)).sum()+2*enll.sum()+1./sig2_n*(
             (y**2).sum()-(beta**2).sum())+2*(X.shape[0]-self.M)*a
-        penelty = kl(mu_w, sig_w)
-        cost = (nlml+penelty)/X.shape[0]
+        penelty = (kl(mu_w, sig_w)*self.M+kl(mu_l, sig_l)*self.S)/(self.S+self.M)
+        cost = (nlml+penelty*self.M)/X.shape[0]
         grads = TT.grad(cost, params)
         updates = getattr(OPT, algo)(self.params, grads, **algo_params)
         updates = getattr(OPT, 'apply_nesterov_momentum')(updates, momentum=0.9)

@@ -30,7 +30,7 @@ algo = {
 opt_params = {
     'obj': metric,
     'algo': algo,
-    'batches_num': 18,
+    'batches_num': 8,
     'cvrg_tol': 1e-5,
     'max_cvrg_iter': 18,
     'max_iter': 500
@@ -113,7 +113,7 @@ for nfeats in nfeats_choices:
         for res in evals.keys():
             results[res].append(model.evals[res][1][-1])
     for en in evals.keys():
-        evals[en][1].append((np.mean(results[en]), np.std(results[en])))
+        evals[en][1].append((np.median(results[en]), np.std(results[en])))
 
 ############################ Plot Performances ############################
 import os
