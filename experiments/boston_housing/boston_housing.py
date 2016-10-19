@@ -13,13 +13,13 @@ from SCFGP import SCFGP, Visualizer
 BEST_MODEL_PATH = 'boston_scfgp.pkl'
 
 ############################ Prior Setting ############################
-reps_per_feats = 20
-plot_metric = 'nmse'
+reps_per_feats = 50
+plot_metric = 'score'
 select_params_metric = 'cost'
 select_model_metric = 'score'
-# visualizer = None
-fig = plt.figure(figsize=(8, 6), facecolor='white')
-visualizer = Visualizer(fig, plot_metric)
+visualizer = None
+# fig = plt.figure(figsize=(8, 6), facecolor='white')
+# visualizer = Visualizer(fig, plot_metric)
 nfeats_range = [10, 90]
 algo = {
     'algo': 'adam',
@@ -33,9 +33,9 @@ algo = {
 opt_params = {
     'obj': select_params_metric,
     'algo': algo,
-    'nbatches': 1,
-    'cvrg_tol': 1e-5,
-    'max_cvrg': 28,
+    'nbatches': 5,
+    'cvrg_tol': 1e-3,
+    'max_cvrg': 38,
     'max_iter': 500
 }
 
