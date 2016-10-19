@@ -286,7 +286,7 @@ class SCFGP(object):
         self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
 
     def _print_current_evals(self):
-        for metric in sort(self.evals.keys()):
+        for metric in sorted(self.evals.keys()):
             best_perform_eval = self.evals[metric][1][self.best_perform_ind]
             self.message(self.NAME, "%8s = %.4e"%(metric, best_perform_eval))
 
