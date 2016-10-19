@@ -34,8 +34,8 @@ mnlps = []
 for _ in range(repeats):
     X_train, y_train, X_test, y_test = load_boston_data()
     for exp in [True, False]:
-        model = SCFGP(-1, 20, exp, False)
-        model.fit(X_train, y_train, X_test, y_test, plot_training=True)
+        model = SCFGP(-1, 20, True)
+        model.fit(X_train, y_train, X_test, y_test, plot=True)
         nmses.append(model.TsNMSE)
         mnlps.append(model.TsMNLP)
         scores.append(model.SCORE)
