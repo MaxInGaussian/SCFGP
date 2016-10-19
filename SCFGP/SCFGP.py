@@ -220,7 +220,7 @@ class SCFGP(object):
             if(Xv is not None and yv is not None):
                 self.predict(Xv, yv)
             if(iter%(max_iter//10) == 1):
-                self.message("-"*13, "VALIDATION ITERATION", iter, "-"*13)
+                self.message("-"*17, "VALIDATION ITERATION", iter, "-"*17)
                 self._print_current_evals()
             if(visualizer is not None and iter%2 == 1):
                 animate(iter)
@@ -247,7 +247,7 @@ class SCFGP(object):
         self.best_perform_ind = len(self.evals['COST'][1])-1
         disp = self.verbose
         self.verbose = True
-        self.message("-"*16, "OPTIMIZATION RESULT", "-"*16)
+        self.message("-"*19, "OPTIMIZATION RESULT", "-"*19)
         self._print_current_evals()
         self.message("-"*60)
         self.verbose = disp
@@ -286,9 +286,9 @@ class SCFGP(object):
         self.NAME = "SCFGP (Fourier Feature Size=%d)"%(self.M)
 
     def _print_current_evals(self):
-        for metric in self.evals.keys():
+        for metric in sort(self.evals.keys()):
             best_perform_eval = self.evals[metric][1][self.best_perform_ind]
-            self.message(self.NAME, "%8s = %.2e"%(metric, best_perform_eval))
+            self.message(self.NAME, "%8s = %.4e"%(metric, best_perform_eval))
 
 
 
