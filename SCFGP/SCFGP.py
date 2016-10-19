@@ -238,9 +238,9 @@ class SCFGP(object):
             if(iter%(max_iter//10) == 1):
                 self.message("-"*17, "VALIDATION ITERATION", iter, "-"*17)
                 self._print_current_evals()
-            if(visualizer is not None and iter%2 == 1):
+            if(visualizer is not None):
                 animate(iter)
-                plt.pause(0.1)
+                plt.pause(0.05)
             obj_val = self.evals[obj][1][-1]
             if(obj_val < min_obj_val):
                 if(min_obj_val-obj_val < cvrg_tol):
