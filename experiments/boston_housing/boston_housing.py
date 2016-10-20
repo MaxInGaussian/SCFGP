@@ -80,6 +80,8 @@ for nfeats in nfeats_choices:
             model.set_data(X_train, y_train)
             model.optimize(X_valid, y_valid, funcs, visualizer, **opt_params)
         print("!"*60)
+        if(np.any(np.isnan(model.evals[select_model_metric.upper()][1]))):
+            exit(-1)
         if(not os.path.exists(BEST_MODEL_PATH)):
             model.save(BEST_MODEL_PATH)
             print("!"*20, "NEW BEST PREDICTOR", "!"*20)
