@@ -64,6 +64,10 @@ class Scaler(object):
                 b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
                 self.data['bias'][d] = b[0]**2
                 self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
+            tX += self.data['bias'][None, :]
+            tX = boxcox(tX, self.data['lmb'])
+            self.data['mu'] = np.mean(tX, axis=0)
+            self.data['std'] = np.std(tX, axis=0)
         elif(self.method == "auto-inv-normal"):
             self.data['min'] = np.min(tX, axis=0)
             self.data['max'] = np.max(tX, axis=0)

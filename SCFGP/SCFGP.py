@@ -31,7 +31,8 @@ class SCFGP(object):
     
     
     def __init__(self, sparsity=5, nfeats=18, evals=None,
-        X_scaling_method='inv-normal', y_scaling_method='normal', verbose=False):
+        X_scaling_method='auto-inv-normal',
+        y_scaling_method='auto-normal', verbose=False):
         self.S = sparsity
         self.M = nfeats
         self.X_scaler = Scaler(X_scaling_method)
