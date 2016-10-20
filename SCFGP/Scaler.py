@@ -53,8 +53,10 @@ class Scaler(object):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
         elif(self.method == "auto-normal"):
-            self.data['min'] = np.min(tX, axis=0)
-            self.data['max'] = np.max(tX, axis=0)
+            mu = np.mean(tX, axis=0)
+            std = np.std(tX, axis=0)
+            self.data['min'] = mu-6*std
+            self.data['max'] = mu+6*std
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
@@ -69,8 +71,10 @@ class Scaler(object):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
         elif(self.method == "auto-inv-normal"):
-            self.data['min'] = np.min(tX, axis=0)
-            self.data['max'] = np.max(tX, axis=0)
+            mu = np.mean(tX, axis=0)
+            std = np.std(tX, axis=0)
+            self.data['min'] = mu-6*std
+            self.data['max'] = mu+6*std
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
