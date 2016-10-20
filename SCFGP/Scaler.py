@@ -66,7 +66,8 @@ class Scaler(object):
                 lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
                 ks_func = lambda x: kstest(x.ravel(), 'norm')[0]
                 fun = lambda b: ks_func(boxcox(tX[:, d]+b[0]**2, lmb_func(b)))
-                b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
+                b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)],
+                    options={'xtol': 1e-4, 'maxiter':100, 'disp': True})['x']
                 self.data['bias'][d] = b[0]**2
                 self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
             tX += self.data['bias'][None, :]
@@ -88,7 +89,8 @@ class Scaler(object):
                 ks_func = lambda x: kstest(norm.cdf(
                     (x-np.mean(x))/np.std(x)), 'uniform')[0]
                 fun = lambda b: ks_func(boxcox(tX[:, d]+b[0]**2, lmb_func(b)))
-                b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
+                b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)],
+                    options={'xtol': 1e-4, 'maxiter':100, 'disp': True})['x']
                 self.data['bias'][d] = b[0]**2
                 self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
             tX += self.data['bias'][None, :]
