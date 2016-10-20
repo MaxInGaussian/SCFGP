@@ -58,6 +58,8 @@ class Scaler(object):
             self.data['min'] = mu-3*std
             self.data['max'] = mu+3*std
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            tX = np.maximum(np.zeros_like(tX), tX)
+            tX = np.minimum(np.ones_like(tX), tX)
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
@@ -77,6 +79,7 @@ class Scaler(object):
             self.data['max'] = mu+3*std
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             tX = np.maximum(np.zeros_like(tX), tX)
+            tX = np.minimum(np.ones_like(tX), tX)
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
@@ -101,12 +104,14 @@ class Scaler(object):
         elif(self.method == "auto-normal"):
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             tX = np.maximum(np.zeros_like(tX), tX)
+            tX = np.minimum(np.ones_like(tX), tX)
             tX += self.data['bias'][None, :]
             tX = boxcox(tX, self.data['lmb'])
             return (tX-self.data["mu"])/self.data["std"]
         elif(self.method == "auto-inv-normal"):
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             tX = np.maximum(np.zeros_like(tX), tX)
+            tX = np.minimum(np.ones_like(tX), tX)
             tX += self.data['bias'][None, :]
             tX = boxcox(tX, self.data['lmb'])
             return norm.cdf((tX-self.data["mu"])/self.data["std"])
