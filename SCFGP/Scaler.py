@@ -85,6 +85,10 @@ class Scaler(object):
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
+                if(np.unique(tX[:, d]).shape[0] < tX[:, d].shape[0]/8):
+                    self.data['bias'][d] = 1.
+                    self.data['lmb'][d] = 1.
+                    continue
                 lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
                 ks_func = lambda x: kstest(norm.cdf(
                     (x-np.mean(x))/np.std(x)), 'uniform')[0]
