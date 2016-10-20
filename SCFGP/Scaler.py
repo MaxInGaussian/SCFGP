@@ -64,7 +64,8 @@ class Scaler(object):
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
                 lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
-                fun = lambda b: abs(skew(boxcox(tX[:, d]+b[0]**2, lmb_func(b))))
+                ks_func = lambda x: stats.kstest(x.ravel(), 'norm')[0]
+                fun = lambda b: ks_func(boxcox(tX[:, d]+b[0]**2, lmb_func(b)))
                 b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
                 self.data['bias'][d] = b[0]**2
                 self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
@@ -84,7 +85,8 @@ class Scaler(object):
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
                 lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
-                fun = lambda b: abs(skew(boxcox(tX[:, d]+b[0]**2, lmb_func(b))))
+                ks_func = lambda x: stats.kstest(x.ravel(), 'norm')[0]
+                fun = lambda b: ks_func(boxcox(tX[:, d]+b[0]**2, lmb_func(b)))
                 b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
                 self.data['bias'][d] = b[0]**2
                 self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
