@@ -5,6 +5,9 @@
 ################################################################################
 
 import numpy as np
+from scipy.stats import norm, skew, boxcox_normmax
+from scipy.special import boxcox, inv_boxcox
+from scipy.optimize import minimize
 
 class Scaler(object):
     
@@ -13,9 +16,9 @@ class Scaler(object):
     scaling_methods = [
         "min-max",
         "normal",
-        "log-normal",
-        "sigmoid",
-        "log-sigmoid"
+        "inv-normal",
+        "auto-normal",
+        "auto-inv-normal",
     ]
     
     data = {}
@@ -26,13 +29,15 @@ class Scaler(object):
         if(self.method == "min-max"):
             self.data = {"cols": None, "min": 0, "max":0}
         elif(self.method == "normal"):
-            self.data = {"cols": None, "mu":0}
-        elif(self.method == "log-normal"):
-            self.data = {"cols": None, "log-std": 0, "log-mu":0}
-        elif(self.method == "sigmoid"):
             self.data = {"cols": None, "std": 0, "mu":0}
-        elif(self.method == "log-sigmoid"):
-            self.data = {"cols": None, "log-std": 0, "log-mu":0}
+        elif(self.method == "inv-normal"):
+            self.data = {"cols": None, "std": 0, "mu":0}
+        elif(self.method == "auto-normal"):
+            self.data = {"cols": None, "std": 0, "mu":0,
+                "lmb":0, "min": 0, "max":0, "bias":0}
+        elif(self.method == "auto-inv-normal"):
+            self.data = {"cols": None, "std": 0, "mu":0,
+                "lmb":0, "min": 0, "max":0, "bias":0}
     
     def fit(self, X):
         self.data["cols"] = list(set(range(X.shape[1])).difference(
@@ -44,17 +49,37 @@ class Scaler(object):
         elif(self.method == "normal"):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
-        elif(self.method == "log-normal"):
-            tX = np.log(1+tX)
-            self.data['log-mu'] = np.mean(tX, axis=0)
-            self.data['log-std'] = np.std(tX, axis=0)
-        elif(self.method == "sigmoid"):
+        elif(self.method == "inv-normal"):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
-        elif(self.method == "log-sigmoid"):
-            tX = np.log(1+tX)
-            self.data['log-mu'] = np.mean(tX, axis=0)
-            self.data['log-std'] = np.std(tX, axis=0)
+        elif(self.method == "auto-normal"):
+            self.data['min'] = np.min(tX, axis=0)
+            self.data['max'] = np.max(tX, axis=0)
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            self.data['bias'] = np.zeros(tX.shape[1])
+            self.data['lmb'] = np.zeros(tX.shape[1])
+            for d in range(tX.shape[1]):
+                lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
+                fun = lambda b: abs(skew(boxcox(tX[:, d]+b[0]**2, lmb_func(b))))
+                b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
+                self.data['bias'][d] = b[0]**2
+                self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
+        elif(self.method == "auto-inv-normal"):
+            self.data['min'] = np.min(tX, axis=0)
+            self.data['max'] = np.max(tX, axis=0)
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            self.data['bias'] = np.zeros(tX.shape[1])
+            self.data['lmb'] = np.zeros(tX.shape[1])
+            for d in range(tX.shape[1]):
+                lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
+                fun = lambda b: abs(skew(boxcox(tX[:, d]+b[0]**2, lmb_func(b))))
+                b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
+                self.data['bias'][d] = b[0]**2
+                self.data['lmb'][d] = boxcox_normmax(tX[:, d]+b[0]**2)
+            tX += self.data['bias'][None, :]
+            tX = boxcox(tX, self.data['lmb'])
+            self.data['mu'] = np.mean(tX, axis=0)
+            self.data['std'] = np.std(tX, axis=0)
     
     def forward_transform(self, X):
         tX = X[:, self.data["cols"]]
@@ -62,12 +87,18 @@ class Scaler(object):
             return (tX-self.data["min"])/(self.data["max"]-self.data["min"])
         elif(self.method == "normal"):
             return (tX-self.data["mu"])/self.data["std"]
-        elif(self.method == "log-normal"):
-            return (np.log(1+tX)-self.data["log-mu"])/self.data["log-std"]
-        elif(self.method == "sigmoid"):
-            return np.tanh((tX-self.data["mu"])/self.data["std"])
-        elif(self.method == "log-sigmoid"):
-            return np.tanh((np.log(1+tX)-self.data["log-mu"])/self.data["log-std"])
+        elif(self.method == "inv-normal"):
+            return norm.cdf((tX-self.data["mu"])/self.data["std"])
+        elif(self.method == "auto-normal"):
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            tX += self.data['bias'][None, :]
+            tX = boxcox(tX, self.data['lmb'])
+            return (tX-self.data["mu"])/self.data["std"]
+        elif(self.method == "auto-inv-normal"):
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            tX += self.data['bias'][None, :]
+            tX = boxcox(tX, self.data['lmb'])
+            return norm.cdf((tX-self.data["mu"])/self.data["std"])
     
     def backward_transform(self, X):
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
@@ -75,10 +106,16 @@ class Scaler(object):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]
         elif(self.method == "normal"):
             return X*self.data["std"]+self.data["mu"]
-        elif(self.method == "log-normal"):
-            return np.exp(X*self.data["log-std"]+self.data["log-mu"])-1
-        elif(self.method == "sigmoid"):
-            return (np.log(1+X)-np.log(1-X))/2.*self.data["std"]+self.data["mu"]
-        elif(self.method == "log-sigmoid"):
-            return np.exp((np.log(1+X)-np.log(1-X))/2.*self.data["log-std"]+self.data["log-mu"])-1
+        elif(self.method == "inv-normal"):
+            return (norm.ppf(X)-self.data["mu"])/self.data["std"]
+        elif(self.method == "auto-normal"):
+            tX = X*self.data["std"]+self.data["mu"]
+            tX = inv_boxcox(tX, self.data['lmb'])
+            tX -= self.data['bias'][None, :]
+            return tX*(self.data["max"]-self.data["min"])+self.data["min"]
+        elif(self.method == "auto-inv-normal"):
+            tX = norm.ppf(X)*self.data["std"]+self.data["mu"]
+            tX = inv_boxcox(tX, self.data['lmb'])
+            tX -= self.data['bias'][None, :]
+            return tX*(self.data["max"]-self.data["min"])+self.data["min"]
     

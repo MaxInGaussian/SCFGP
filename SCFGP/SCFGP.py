@@ -31,7 +31,7 @@ class SCFGP(object):
     
     
     def __init__(self, sparsity=5, nfeats=18, evals=None,
-        X_scaling_method='min-max', y_scaling_method='normal', verbose=False):
+        X_scaling_method='inv-normal', y_scaling_method='normal', verbose=False):
         self.S = sparsity
         self.M = nfeats
         self.X_scaler = Scaler(X_scaling_method)
@@ -150,6 +150,10 @@ class SCFGP(object):
         return self.train_func, self.train_iter_func, self.pred_func
 
     def set_data(self, X, y):
+        """
+        X: Normally Distributed Inputs
+        Y: Normally Distributed Outputs
+        """
         self.message("-"*60, "\nNormalizing SCFGP training data...")
         self.X_scaler.fit(X)
         self.y_scaler.fit(y)
