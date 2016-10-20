@@ -76,6 +76,7 @@ class Scaler(object):
             self.data['min'] = mu-3*std
             self.data['max'] = mu+3*std
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            tX = np.maximum(np.zeros_like(tX), tX)
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
