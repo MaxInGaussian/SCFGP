@@ -33,10 +33,10 @@ algo = {
 opt_params = {
     'obj': select_params_metric,
     'algo': algo,
-    'nbatches': 5,
-    'cvrg_tol': 1e-3,
-    'max_cvrg': 38,
-    'max_iter': 500
+    'nbatches': 1,
+    'cvrg_tol': 1e-5,
+    'max_cvrg': 8,
+    'max_iter': 200
 }
 
 ############################ General Methods ############################
