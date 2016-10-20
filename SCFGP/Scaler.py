@@ -85,7 +85,7 @@ class Scaler(object):
             self.data['bias'] = np.zeros(tX.shape[1])
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
-                if(np.unique(tX[:, d]).shape[0] < tX[:, d].shape[0]/8):
+                if(np.unique(tX[:, d]).shape[0] < 10):
                     self.data['bias'][d] = 1.
                     self.data['lmb'][d] = 1.
                     continue
