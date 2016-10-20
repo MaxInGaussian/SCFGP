@@ -273,12 +273,9 @@ class SCFGP(object):
         self.verbose = disp
 
     def predict(self, Xs, ys=None):
-        X = self.X_scaler.backward_transform(self.X)
-        self.X_scaler.fit(np.vstack((X, Xs)))
         self.Xs = self.X_scaler.forward_transform(Xs)
         mu_f, std_f = self.pred_func(self.Xs, self.alpha, self.Li)
         mu_y = self.y_scaler.backward_transform(mu_f)
-        self.X_scaler.fit(X)
         up_bnd_y = self.y_scaler.backward_transform(mu_f+std_f[:, None])
         std_y = up_bnd_y-mu_y
         if(ys is not None):
