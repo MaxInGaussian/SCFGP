@@ -13,7 +13,7 @@ class Scaler(object):
     
     " Scaler (Data Preprocessing) "
 
-    scaling_methods = [
+    algos = [
         "min-max",
         "normal",
         "inv-normal",
@@ -23,19 +23,19 @@ class Scaler(object):
     
     data = {}
     
-    def __init__(self, method):
-        assert method.lower() in self.scaling_methods, "Invalid Scaling Method!"
-        self.method = method.lower()
-        if(self.method == "min-max"):
+    def __init__(self, algo):
+        assert algo.lower() in self.algos, "Invalid Scaling Algorithm!"
+        self.algo = algo.lower()
+        if(self.algo == "min-max"):
             self.data = {"cols": None, "min": 0, "max":0}
-        elif(self.method == "normal"):
+        elif(self.algo == "normal"):
             self.data = {"cols": None, "std": 0, "mu":0}
-        elif(self.method == "inv-normal"):
+        elif(self.algo == "inv-normal"):
             self.data = {"cols": None, "std": 0, "mu":0}
-        elif(self.method == "auto-normal"):
+        elif(self.algo == "auto-normal"):
             self.data = {"cols": None, "std": 0, "mu":0,
                 "lmb":0, "min": 0, "max":0, "bias":0}
-        elif(self.method == "auto-inv-normal"):
+        elif(self.algo == "auto-inv-normal"):
             self.data = {"cols": None, "std": 0, "mu":0,
                 "lmb":0, "min": 0, "max":0, "bias":0}
     
@@ -43,16 +43,16 @@ class Scaler(object):
         self.data["cols"] = list(set(range(X.shape[1])).difference(
             np.where(np.all(X == X[0,:], axis = 0))[0]))
         tX = X[:, self.data["cols"]]
-        if(self.method == "min-max"):
+        if(self.algo == "min-max"):
             self.data['min'] = np.min(tX, axis=0)
             self.data['max'] = np.max(tX, axis=0)
-        elif(self.method == "normal"):
+        elif(self.algo == "normal"):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
-        elif(self.method == "inv-normal"):
+        elif(self.algo == "inv-normal"):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
-        elif(self.method == "auto-normal"):
+        elif(self.algo == "auto-normal"):
             mu = np.mean(tX, axis=0)
             std = np.std(tX, axis=0)
             self.data['min'] = mu-3*std
@@ -73,7 +73,7 @@ class Scaler(object):
             tX = boxcox(tX, self.data['lmb'])
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
-        elif(self.method == "auto-inv-normal"):
+        elif(self.algo == "auto-inv-normal"):
             mu = np.mean(tX, axis=0)
             std = np.std(tX, axis=0)
             self.data['min'] = mu-3*std
@@ -85,7 +85,8 @@ class Scaler(object):
             self.data['lmb'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
                 lmb_func = lambda b: boxcox_normmax(tX[:, d]+b[0]**2)
-                ks_func = lambda x: kstest(x.ravel(), 'norm')[0]
+                ks_func = lambda x: kstest(norm.cdf(
+                    (x-np.mean(x))/np.std(x)), 'uniform')[0]
                 fun = lambda b: ks_func(boxcox(tX[:, d]+b[0]**2, lmb_func(b)))
                 b = minimize(fun, [.3], method='SLSQP', bounds=[(0.01, 2)])['x']
                 self.data['bias'][d] = b[0]**2
@@ -97,20 +98,20 @@ class Scaler(object):
     
     def forward_transform(self, X):
         tX = X[:, self.data["cols"]]
-        if(self.method == "min-max"):
+        if(self.algo == "min-max"):
             return (tX-self.data["min"])/(self.data["max"]-self.data["min"])
-        elif(self.method == "normal"):
+        elif(self.algo == "normal"):
             return (tX-self.data["mu"])/self.data["std"]
-        elif(self.method == "inv-normal"):
+        elif(self.algo == "inv-normal"):
             return norm.cdf((tX-self.data["mu"])/self.data["std"])
-        elif(self.method == "auto-normal"):
+        elif(self.algo == "auto-normal"):
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             tX = np.maximum(np.zeros_like(tX), tX)
             tX = np.minimum(np.ones_like(tX), tX)
             tX += self.data['bias'][None, :]
             tX = boxcox(tX, self.data['lmb'])
             return (tX-self.data["mu"])/self.data["std"]
-        elif(self.method == "auto-inv-normal"):
+        elif(self.algo == "auto-inv-normal"):
             tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
             tX = np.maximum(np.zeros_like(tX), tX)
             tX = np.minimum(np.ones_like(tX), tX)
@@ -120,18 +121,18 @@ class Scaler(object):
     
     def backward_transform(self, X):
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
-        if(self.method == "min-max"):
+        if(self.algo == "min-max"):
             return X*(self.data["max"]-self.data["min"])+self.data["min"]
-        elif(self.method == "normal"):
+        elif(self.algo == "normal"):
             return X*self.data["std"]+self.data["mu"]
-        elif(self.method == "inv-normal"):
+        elif(self.algo == "inv-normal"):
             return (norm.ppf(X)-self.data["mu"])/self.data["std"]
-        elif(self.method == "auto-normal"):
+        elif(self.algo == "auto-normal"):
             tX = X*self.data["std"]+self.data["mu"]
             tX = inv_boxcox(tX, self.data['lmb'])
             tX -= self.data['bias'][None, :]
             return tX*(self.data["max"]-self.data["min"])+self.data["min"]
-        elif(self.method == "auto-inv-normal"):
+        elif(self.algo == "auto-inv-normal"):
             tX = norm.ppf(X)*self.data["std"]+self.data["mu"]
             tX = inv_boxcox(tX, self.data['lmb'])
             tX -= self.data['bias'][None, :]
