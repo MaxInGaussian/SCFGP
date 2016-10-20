@@ -260,7 +260,7 @@ class SCFGP(object):
                 break
             elif(cvrg_iter > max_cvrg*0.5):
                 randp = np.random.rand()*cvrg_iter/max_cvrg*0.8
-                x = randp*x+(1-randp)*argmin_x
+                self.params = randp*self.params+(1-randp)*argmin_params
         self.params = argmin_params.copy()
         cost, self.alpha, self.Li = self.train_func(self.X, self.y)
         self.evals['COST'][1].append(np.double(cost))
