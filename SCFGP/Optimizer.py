@@ -9,7 +9,7 @@ import theano
 import theano.tensor as TT
 from collections import OrderedDict
 
-class UpdateRules():
+class Optimizer():
 
     algos = [
         "apply_momentum",

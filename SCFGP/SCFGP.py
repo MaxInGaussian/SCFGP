@@ -12,7 +12,7 @@ from theano import config as Tc, shared as Ts, function as Tf, tensor as TT
 from theano.sandbox import linalg as Tlin
 
 from .Scaler import Scaler
-from .ParamUpdate import UpdateRules as OPT
+from .Optimizer import Optimizer as OPT
 
 Tc.mode = 'FAST_RUN'
 Tc.optimizer = 'fast_run'
