@@ -40,6 +40,13 @@ opt_params = {
 }
 
 ############################ General Methods ############################
+def plot_dist(*args):
+    import seaborn as sns
+    for x in args:
+        plt.figure()
+        sns.distplot(x)
+    plt.show()
+
 def load_boston_data(prop=400/506):
     from sklearn import datasets
     boston = datasets.load_boston()

@@ -221,7 +221,7 @@ class SCFGP(object):
             self.evals['MNLP'][1].append(0)
             self.evals['SCORE'][1].append(0)
         self.min_obj_ind = 0
-        min_obj_val, argmin_params, cvrg_iter = np.Infinity, None, 0
+        min_obj_val, argmin_params, cvrg_iter = np.Infinity, self.params, 0
         for iter in range(max_iter):
             if(nbatches > 1):
                 cost_sum, params_list, batch_count = 0, [], 0
@@ -259,8 +259,8 @@ class SCFGP(object):
             if(iter > 30 and cvrg_iter > max_cvrg):
                 break
             elif(cvrg_iter > max_cvrg*0.5):
-                randp = np.random.rand()*cvrg_iter/max_cvrg*0.8
-                self.params = randp*self.params+(1-randp)*argmin_params
+                randp = np.random.rand()*cvrg_iter/max_cvrg*0.5
+                self.params = (1-randp)*self.params+randp*argmin_params
         self.params = argmin_params.copy()
         cost, self.alpha, self.Li = self.train_func(self.X, self.y)
         self.evals['COST'][1].append(np.double(cost))
