@@ -280,7 +280,8 @@ class SCFGP(object):
         mu_f, std_f = self.pred_func(self.Xs, self.alpha, self.Li)
         mu_y = self.y_scaler.backward_transform(mu_f)
         up_bnd_y = self.y_scaler.backward_transform(mu_f+std_f[:, None])
-        std_y = up_bnd_y-mu_y
+        dn_bnd_y = self.y_scaler.backward_transform(mu_f-std_f[:, None])
+        std_y = 0.5*(up_bnd_y-dn_bnd_y)
         if(ys is not None):
             self.evals['MAE'][1].append(np.mean(np.abs(mu_y-ys)))
             self.evals['NMAE'][1].append(self.evals['MAE'][1][-1]/np.std(ys))
