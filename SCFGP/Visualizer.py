@@ -31,16 +31,15 @@ class Visualizer(object):
             ax.cla()
             pts = 300
             errors = [0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64, 2.2]
-            Xplot = np.linspace(-0.1, 1.1, pts)[:, None]
-            mu, std = self.model.pred_func(
-                Xplot, self.model.hyper, self.model.alpha, self.model.Ri)
+            Xs = np.linspace(-0.1, 1.1, pts)[:, None]
+            mu, std = self.model.pred_func(Xs, self.model.alpha, self.model.Li)
             mu = mu.ravel()
             std = std.ravel()
             for er in errors:
-                ax.fill_between(Xplot[:, 0], mu-er*std, mu+er*std,
+                ax.fill_between(Xs[:, 0], mu-er*std, mu+er*std,
                                 alpha=((3-er)/5.5)**1.7, facecolor='blue',
                                 linewidth=0.0)
-            ax.plot(Xplot[:, 0], mu, alpha=0.8, c='black')
+            ax.plot(Xs[:, 0], mu, alpha=0.8, c='black')
             ax.errorbar(self.model.X[:, 0],
                 self.model.y.ravel(), fmt='r.', markersize=5, alpha=0.6)
             yrng = self.model.y.max()-self.model.y.min()

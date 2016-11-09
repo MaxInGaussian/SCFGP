@@ -15,7 +15,7 @@ BEST_MODEL_PATH = 'boston_scfgp.pkl'
 ############################ Prior Setting ############################
 reps_per_feats = 50
 plot_metric = 'score'
-select_params_metric = 'cost'
+select_params_metric = 'score'
 select_model_metric = 'score'
 visualizer = None
 # fig = plt.figure(figsize=(8, 6), facecolor='white')
@@ -62,7 +62,7 @@ def load_boston_data(prop=400/506):
 ############################ Training Phase ############################
 X_train, y_train, X_valid, y_valid = load_boston_data()
 nfeats_range_length = nfeats_range[1]-nfeats_range[0]
-nfeats_choices = [nfeats_range[0]+(i*nfeats_range_length)//8 for i in range(8)]
+nfeats_choices = [nfeats_range[0]+(i*nfeats_range_length)//8 for i in range(5)]
 evals = {
     "SCORE": ["Model Selection Score", []],
     "COST": ["Hyperparameter Selection Cost", []],
@@ -78,7 +78,7 @@ for nfeats in nfeats_choices:
     results = {en:[] for en in evals.keys()}
     for round in range(reps_per_feats):
         X_train, y_train, X_valid, y_valid = load_boston_data()
-        model = SCFGP(nfeats=nfeats)
+        model = SCFGP(sparsity=20, nfeats=nfeats)
         if(funcs is None):
             model.set_data(X_train, y_train)
             model.optimize(X_valid, y_valid, None, visualizer, **opt_params)
@@ -87,8 +87,6 @@ for nfeats in nfeats_choices:
             model.set_data(X_train, y_train)
             model.optimize(X_valid, y_valid, funcs, visualizer, **opt_params)
         print("!"*60)
-        if(np.any(np.isnan(model.evals[select_model_metric.upper()][1]))):
-            exit(-1)
         if(not os.path.exists(BEST_MODEL_PATH)):
             model.save(BEST_MODEL_PATH)
             print("!"*20, "NEW BEST PREDICTOR", "!"*20)
@@ -105,7 +103,7 @@ for nfeats in nfeats_choices:
         for res in evals.keys():
             results[res].append(model.evals[res][1][-1])
     for en in evals.keys():
-        evals[en][1].append((np.median(results[en]), np.std(results[en])))
+        evals[en][1].append((np.mean(results[en]), np.std(results[en])))
 
 ############################ Plot Performances ############################
 import os

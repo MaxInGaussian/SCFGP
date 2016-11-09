@@ -5,7 +5,7 @@
 ################################################################################
 
 import numpy as np
-from scipy.stats import norm, shapiro
+from scipy.stats import skew, norm, mstats
 from scipy.optimize import minimize
 
 class Scaler(object):
@@ -32,9 +32,9 @@ class Scaler(object):
         elif(self.algo == "inv-normal"):
             self.data = {"cols": None, "std": 0, "mu":0}
         elif(self.algo == "auto-normal"):
-            self.data = {"cols": None, "std": 0, "mu":0, "ihs1":0, "ihs2":0}
+            self.data = {"cols": None, "min": 0, "max":0, "std": 0, "mu":0, "boxcox":0}
         elif(self.algo == "auto-inv-normal"):
-            self.data = {"cols": None, "std": 0, "mu":0, "ihs1":0, "ihs2":0}
+            self.data = {"cols": None, "min": 0, "max":0, "std": 0, "mu":0, "boxcox":0}
     
     def fit(self, X):
         self.data["cols"] = list(set(range(X.shape[1])).difference(
@@ -50,43 +50,49 @@ class Scaler(object):
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
         elif(self.algo == "auto-normal"):
-            ihs = lambda y, a, b: np.arcsinh(a*(y+b))/a
-            self.data['ihs1'] = np.zeros(tX.shape[1])
-            self.data['ihs2'] = np.zeros(tX.shape[1])
+            self.data['min'] = np.min(tX, axis=0)
+            self.data['max'] = np.max(tX, axis=0)
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            boxcox = lambda x, lm: (np.sign(x)*np.abs(x)**lm-1)/lm
+            self.data['boxcox'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
+                Xd = tX[:, d]
                 if(np.unique(tX[:, d]).shape[0] < 10):
-                    self.data['ihs1'][d] = 1e-3
-                    self.data['ihs2'][d] = 0
+                    self.data['boxcox'][d] = 1
                     continue
-                test = lambda y: 1-shapiro(y.ravel())[0]
-                fun = lambda x: test(ihs(tX[:, d], np.exp(x[0]), x[1]))
-                std = np.std(tX[:, d])
-                bounds = [(-2, 2), (-2*std, 2*std)]
-                x = minimize(fun, [0., 0.], method='SLSQP', bounds=bounds,
+                skewness = lambda x: skew(x, bias=False)**2
+                t_lm = lambda lm: np.log(np.exp(lm[0])+1)
+                boxcox_Xd = lambda lm: boxcox(Xd, t_lm(lm))
+                obj = lambda lm: skewness(boxcox_Xd(lm))
+                bounds = [(-5, 5)]
+                lm = minimize(obj, [0.], method='SLSQP', bounds=bounds,
                     options={'ftol': 1e-8, 'maxiter':100, 'disp':False})['x']
-                self.data['ihs1'][d] = np.exp(x[0])
-                self.data['ihs2'][d] = x[1]
-            tX = ihs(tX, self.data['ihs1'][None, :], self.data['ihs2'][None, :])
+                self.data['boxcox'][d] = t_lm(lm)
+            lm = self.data['boxcox'][None, :]
+            tX = boxcox(tX, lm)
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
         elif(self.algo == "auto-inv-normal"):
-            ihs = lambda y, a, b: np.arcsinh(a*(y+b))/a
-            self.data['ihs1'] = np.zeros(tX.shape[1])
-            self.data['ihs2'] = np.zeros(tX.shape[1])
+            self.data['min'] = np.min(tX, axis=0)
+            self.data['max'] = np.max(tX, axis=0)
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            boxcox = lambda x, lm: (np.sign(x)*np.abs(x)**lm-1)/lm
+            self.data['boxcox'] = np.zeros(tX.shape[1])
             for d in range(tX.shape[1]):
+                Xd = tX[:, d]
                 if(np.unique(tX[:, d]).shape[0] < 10):
-                    self.data['ihs1'][d] = 1e-3
-                    self.data['ihs2'][d] = 0
+                    self.data['boxcox'][d] = 1
                     continue
-                test = lambda y: 1-shapiro(y.ravel())[0]
-                fun = lambda x: test(ihs(tX[:, d], np.exp(x[0]), x[1]))
-                std = np.std(tX[:, d])
-                bounds = [(-2, 2), (-2*std, 2*std)]
-                x = minimize(fun, [0., 0.], method='SLSQP', bounds=bounds,
+                skewness = lambda x: skew(x, bias=False)**2
+                t_lm = lambda lm: np.log(np.exp(lm[0])+1)
+                boxcox_Xd = lambda lm: boxcox(Xd, t_lm(lm))
+                obj = lambda lm: skewness(boxcox_Xd(lm))
+                bounds = [(-5, 5)]
+                lm = minimize(obj, [0.], method='SLSQP', bounds=bounds,
                     options={'ftol': 1e-8, 'maxiter':100, 'disp':False})['x']
-                self.data['ihs1'][d] = np.exp(x[0])
-                self.data['ihs2'][d] = x[1]
-            tX = ihs(tX, self.data['ihs1'][None, :], self.data['ihs2'][None, :])
+                self.data['boxcox'][d] = t_lm(lm)
+            lm = self.data['boxcox'][None, :]
+            tX = boxcox(tX, lm)
             self.data['mu'] = np.mean(tX, axis=0)
             self.data['std'] = np.std(tX, axis=0)
     
@@ -99,13 +105,15 @@ class Scaler(object):
         elif(self.algo == "inv-normal"):
             return norm.cdf((tX-self.data["mu"])/self.data["std"])
         elif(self.algo == "auto-normal"):
-            ihs = lambda y, a, b: np.arcsinh(a*(y+b))/a
-            tX = ihs(tX, self.data['ihs1'][None, :], self.data['ihs2'][None, :])
-            return (tX-self.data["mu"])/self.data["std"]
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            lm = self.data['boxcox'][None, :]
+            boxcox = lambda x: (np.sign(x)*np.abs(x)**lm-1)/lm
+            return (boxcox(tX)-self.data["mu"])/self.data["std"]
         elif(self.algo == "auto-inv-normal"):
-            ihs = lambda y, a, b: np.arcsinh(a*(y+b))/a
-            tX = ihs(tX, self.data['ihs1'][None, :], self.data['ihs2'][None, :])
-            return norm.cdf((tX-self.data["mu"])/self.data["std"])
+            tX = (tX-self.data["min"])/(self.data["max"]-self.data["min"])
+            lm = self.data['boxcox'][None, :]
+            boxcox = lambda x: (np.sign(x)*np.abs(x)**lm-1)/lm
+            return norm.cdf(boxcox(tX), self.data["mu"], self.data["std"])
     
     def backward_transform(self, X):
         assert len(self.data["cols"]) == X.shape[1], "Backward Transform Error"
@@ -116,13 +124,13 @@ class Scaler(object):
         elif(self.algo == "inv-normal"):
             return (norm.ppf(X)-self.data["mu"])/self.data["std"]
         elif(self.algo == "auto-normal"):
-            hs = lambda y, a, b: np.sinh(a*y)/a-b
+            lm = self.data['boxcox'][None, :]
+            inv_boxcox = lambda x: np.sign(x*lm+1)*np.abs(x*lm+1)**(1./lm)
             tX = X*self.data["std"]+self.data["mu"]
-            tX = hs(tX, self.data['ihs1'][None, :], self.data['ihs2'][None, :])
-            return tX
+            return inv_boxcox(tX)*(self.data["max"]-self.data["min"])+self.data["min"]
         elif(self.algo == "auto-inv-normal"):
-            hs = lambda y, a, b: np.sinh(a*y)/a-b
-            tX = norm.ppf(X)*self.data["std"]+self.data["mu"]
-            tX = hs(tX, self.data['ihs1'][None, :], self.data['ihs2'][None, :])
-            return tX
+            lm = self.data['boxcox'][None, :]
+            inv_boxcox = lambda x: np.sign(x*lm+1)*np.abs(x*lm+1)**(1./lm)
+            tX = norm.ppf(X, self.data["mu"], self.data["std"])
+            return inv_boxcox(tX)*(self.data["max"]-self.data["min"])+self.data["min"]
     

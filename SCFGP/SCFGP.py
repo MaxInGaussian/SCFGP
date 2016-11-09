@@ -30,7 +30,7 @@ class SCFGP(object):
     X, y, hyper, Li, alpha, train_func, pred_func = [None]*7
     
     
-    def __init__(self, sparsity=5, nfeats=18, evals=None,
+    def __init__(self, sparsity=20, nfeats=18, evals=None,
         X_scaling_method='auto-inv-normal',
         y_scaling_method='auto-normal', verbose=False):
         self.S = sparsity
@@ -208,7 +208,6 @@ class SCFGP(object):
             self.message("done.")
         else:
             self.train_func, self.train_iter_func, self.pred_func = funcs
-        train_start_time = time.time()
         if(visualizer is not None):
             visualizer.model = self
             animate = visualizer.train_with_plot()
@@ -221,6 +220,7 @@ class SCFGP(object):
             self.evals['MNLP'][1].append(0)
             self.evals['SCORE'][1].append(0)
         self.min_obj_ind = 0
+        train_start_time = time.time()
         min_obj_val, argmin_params, cvrg_iter = np.Infinity, self.params, 0
         for iter in range(max_iter):
             if(nbatches > 1):
@@ -311,6 +311,8 @@ class SCFGP(object):
 
     def _print_current_evals(self):
         for metric in sorted(self.evals.keys()):
+            if(len(self.evals[metric][1]) < len(self.evals['COST'][1])):
+                continue
             best_perform_eval = self.evals[metric][1][self.min_obj_ind]
             self.message(self.NAME, "%7s = %.4e"%(metric, best_perform_eval))
 

@@ -1,6 +1,6 @@
 #SCFGP
 
-SCFGP is a proposed improvement of [Sparse Spectrum Gaussian Process](http://quinonero.net/Publications/lazaro-gredilla10a.pdf) (SPGP), which is a new branch of method to speed up Gaussian process model taking advantage of [Fourier features](https://papers.nips.cc/paper/3182-random-features-for-large-scale-kernel-machines.pdf). Recall that using Gaussian processes for machine learning is a state-of-the-art technique that originate from and popularize by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/).
+SCFGP is a proposed improvement of [Sparse Spectrum Gaussian Process](http://quinonero.net/Publications/lazaro-gredilla10a.pdf) (SPGP), which is a new branch of method to speed up Gaussian process model taking advantage of [Fourier features](https://papers.nips.cc/paper/3182-random-features-for-large-scale-kernel-machines.pdf). Recall that using Gaussian processes for machine learning is a state-of-the-art technique that is originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/).
 
 Based on minimization of the marginal likelihood, SCFGP selects a set of vectors to obtain a [Gramian matrix](https://en.wikipedia.org/wiki/Gramian_matrix), which is treated as the frequency matrix for later computation of Fourier features. This procedure indeed can be viewed as constructing sparsely correlated Fourier features. 
 
@@ -88,11 +88,11 @@ model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 | Regression Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | 12.8740 |
-| [Boosting](http://professordrucker.com/Pubications/ImprovingRegressorsUsingBoostingTechniques.pdf) | N/A | 10.7 | N/A | N/A | N/A | N/A |
-| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 12.4 | N/A | N/A | N/A | **6.0** |
-| [PS-SVR](http://epubs.siam.org/doi/abs/10.1137/1.9781611972726.16) | N/A | 7.887 | N/A | 0.0833 | N/A | N/A |
-| [spLGP](http://www2.stat.duke.edu/~st118/Publication/TokdarZhuGhosh.pdf) | 1.73 | N/A | N/A | N/A | N/A | N/A |
-| [Student-t GP](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) | N/A | N/A | N/A | 0.0824 | N/A | N/A |
+| [Boosting](http://professordrucker.com/Pubications/ImprovingRegressorsUsingBoostingTechniques.pdf) |  | 10.7 |  |  |  |  |
+| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) |  | 12.4 |  |  |  | **6.0** |
+| [PS-SVR](http://epubs.siam.org/doi/abs/10.1137/1.9781611972726.16) |  | 7.887 |  | 0.0833 |  |  |
+| [spLGP](http://www2.stat.duke.edu/~st118/Publication/TokdarZhuGhosh.pdf) | 1.73 |  |  |  |  |  |
+| [Student-t GP](http://people.ee.duke.edu/~lcarin/NIPS2009_0224.pdf) |  |  |  | 0.0824 |  |  |
 
 P.S. SCFGP's performance refers to this model:
 ```python
@@ -104,7 +104,7 @@ boston_housing_best_model.load("experiments/boston_housing/best_model.pkl")
 | State-Of-The-Art Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **SCFGP** | **1.4113** | **3.8153** | **1.9533** | **0.3715** | **2.0916** | **9.5621** |
-| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) | N/A | 4.65 | N/A | N/A | N/A | 57.0 |
+| [MARK-L](http://dl.acm.org/citation.cfm?id=775051) |  | 4.65 |  |  |  | 57.0 |
 
 P.S. SCFGP's performance refers to this model:
 ```python
@@ -124,7 +124,7 @@ kin8nm_best_model = SCFGP()
 kin8nm_best_model.load("experiments/kin8nm/best_model.pkl")
 ```
 
-# Performance of SCFGP v.s. Number of Fourier features
+# Performance of SCFGP v.s. Number of Fourier Features
 <h2 align="center">
 Bostion Housing
 </h2>
