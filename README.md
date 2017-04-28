@@ -1,4 +1,4 @@
-#SCFGP
+# SCFGP
 
 SCFGP is a proposed improvement of [Sparse Spectrum Gaussian Process](http://quinonero.net/Publications/lazaro-gredilla10a.pdf) (SPGP), which is a new branch of method to speed up Gaussian process model taking advantage of [Fourier features](https://papers.nips.cc/paper/3182-random-features-for-large-scale-kernel-machines.pdf). Recall that using Gaussian processes for machine learning is a state-of-the-art technique that is originated from and popularized by [Carl Edward Rasmussen and Christopher K. I. Williams](http://www.gaussianprocess.org/gpml/).
 
@@ -12,20 +12,6 @@ The formulation of SCFGP is briefly described in this sheet: (Derivation will be
 
 SCFGP is implemented in python using Theano and originally designed by Max W. Y. Lam (maxingaussian@gmail.com).
 
-###Highlights of SCFGP
-
-- SCFGP optimizes
-the Fourier features so as to "learn" a tailmade covariance matrix from the data. 
-This removes the necessity of deciding which kernel function to use in different problems.
-
-- SCFGP implements a variety of formulation to transform the optimized Fourier features to covariance matrix, including the typical sin-cos concatenation introduced by [Miguel](http://www.jmlr.org/papers/v11/lazaro-gredilla10a.html), and the generalized approach described by [Yarin](http://jmlr.org/proceedings/papers/v37/galb15.html).
-
-- SCFGP uses low-rank frequency matrix for sparse approximation of Fourier features. It is 
-intended to show that low-rank frequency matrix is able to lower the computational 
-burden in each step of optimization, and also render faster convergence and a stabler result.
-
-- Compared with other 
-state-of-the-art regressors, SCFGP usually gives the most accurate prediction on the benchmark datasets of regression.
 
 # Installation
    
@@ -84,7 +70,7 @@ model.fit(X_train, y_train, X_test, y_test, plot_1d_function=True)
 | Bostion Housing | 13 | 400 | 106 |
 | Abalone | 10 | 3133 | 1044 |
 | Kin8nm | 10 | 5000 | 3192 |
-##Predict Boston Housing Prices
+## Predict Boston Housing Prices
 | Regression Model | MAE | MSE | RMSE | NMSE | MNLP | Training Time (s) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **SCFGP** | **1.3398** | **3.1828** | **1.7841** | **0.0405** | **2.0106** | 12.8740 |
@@ -124,40 +110,7 @@ kin8nm_best_model = SCFGP()
 kin8nm_best_model.load("experiments/kin8nm/best_model.pkl")
 ```
 
-# Performance of SCFGP v.s. Number of Fourier Features
-<h2 align="center">
-Bostion Housing
-</h2>
-![BostonHousingMAE](experiments/boston_housing/plots/mae.png?raw=true "Boston Housing MAE")
-![BostonHousingMSE](experiments/boston_housing/plots/mse.png?raw=true "Boston Housing MSE")
-![BostonHousingRMSE](experiments/boston_housing/plots/rmse.png?raw=true "Boston Housing RMAE")
-![BostonHousingNMSE](experiments/boston_housing/plots/nmse.png?raw=true "Boston Housing NMSE")
-![BostonHousingMNLP](experiments/boston_housing/plots/mnlp.png?raw=true "Boston Housing MNLP")
-![BostonHousingTime](experiments/boston_housing/plots/time(s).png?raw=true "Boston Housing Time")
-<h2 align="center">
-Abalone
-</h2>
-![AbaloneMAE](experiments/abalone/plots/mae.png?raw=true "Abalone MAE")
-![AbaloneMSE](experiments/abalone/plots/mse.png?raw=true "Abalone MSE")
-![AbaloneRMSE](experiments/abalone/plots/rmse.png?raw=true "Abalone RMAE")
-![AbaloneNMSE](experiments/abalone/plots/nmse.png?raw=true "Abalone NMSE")
-![AbaloneMNLP](experiments/abalone/plots/mnlp.png?raw=true "Abalone MNLP")
-![AbaloneTime](experiments/abalone/plots/time(s).png?raw=true "Abalone Time")
-<h2 align="center">
-Kin8nm
-</h2>
-![Kin8nmMAE](experiments/kin8nm/plots/mae.png?raw=true "Kin8nm MAE")
-![Kin8nmMSE](experiments/kin8nm/plots/mse.png?raw=true "Kin8nm MSE")
-![Kin8nmRMSE](experiments/kin8nm/plots/rmse.png?raw=true "Kin8nm RMAE")
-![Kin8nmNMSE](experiments/kin8nm/plots/nmse.png?raw=true "Kin8nm NMSE")
-![Kin8nmMNLP](experiments/kin8nm/plots/mnlp.png?raw=true "Kin8nm MNLP")
-![Kin8nmTime](experiments/kin8nm/plots/time(s).png?raw=true "Kin8nm Time")
-<h3 align="center">
-Training time of SCFGP is not quite sensitive to the size of training data.<br>
-On the contrary, it is to a large extent dependent on the number of Fourier features.
-</h3>
-
-#License
+# License
 Copyright (c) 2016, Max W. Y. Lam
 All rights reserved.
 
