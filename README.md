@@ -10,7 +10,7 @@ The formulation of SCFGP is briefly described in this sheet: (Derivation will be
 
 ![SCFGP Formulas](SCFGP_formulas.png?raw=true "SCFGP Formulas")
 
-SCFGP is implemented in python using Theano and originally designed by Max W. Y. Lam (maxingaussian@gmail.com).
+SCFGP is implemented in python using Theano by Max W. Y. Lam (maxingaussian@gmail.com).
 
 
 # Installation
